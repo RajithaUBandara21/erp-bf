@@ -1,0 +1,71 @@
+/* Theme variables - the durable output of /prototype.
+   Ports into Front_End/erpfront/app/globals.css @theme when the first UI
+   feature is built. Light enterprise-admin is the default; [data-theme="dark"]
+   overrides the same names. --accent/--accent-ink are the brand tokens -
+   swap only these two for per-tenant branding, everything else derives from
+   surfaces/text. */
+
+:root {
+  /* surfaces */
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-alt: #eef0f3;
+  --border: #dde1e6;
+
+  /* text */
+  --text: #1c2430;
+  --muted: #5b6472;
+  --faint: #94a0ad;
+
+  /* brand - swap these two for tenant branding */
+  --accent: #2f6fed;
+  --accent-hover: #2559c7;
+  --accent-ink: #ffffff;
+
+  /* status (stock/order/document state badges) */
+  --success: #157347;
+  --success-bg: #e6f4ec;
+  --warning: #a06600;
+  --warning-bg: #fdf1d6;
+  --danger: #c0342c;
+  --danger-bg: #fbe9e8;
+
+  /* type */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* scale */
+  --radius: 8px;
+  --radius-sm: 5px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --touch-target: 44px;
+
+  --shadow-sm: 0 1px 2px rgba(20, 24, 33, 0.06);
+  --shadow-md: 0 4px 16px rgba(20, 24, 33, 0.10);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1420;
+  --surface: #161c2b;
+  --surface-alt: #1d2536;
+  --border: #2a3346;
+
+  --text: #e7ebf3;
+  --muted: #98a2b3;
+  --faint: #5b6472;
+
+  --accent-hover: #6ea1ff;
+
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.14);
+  --warning: #f5c451;
+  --warning-bg: rgba(245, 196, 81, 0.14);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.14);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
