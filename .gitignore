@@ -50,3 +50,4 @@ Front_End/erpfront/next-env.d.ts
 # env files (opt in per-app if needed)
 .env
 .env.*
+!.env.example
