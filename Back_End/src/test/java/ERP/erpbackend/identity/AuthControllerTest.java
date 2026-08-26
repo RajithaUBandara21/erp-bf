@@ -72,4 +72,80 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.errors.password").exists());
 	}
 
+	@Test
+	void rejectsOversizedPasswordWithValidationDetails() throws Exception {
+		String oversizedPassword = "A1" + "a".repeat(72);
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "%s"
+				}
+				""".formatted(oversizedPassword);
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.password").exists());
+	}
+
+	@Test
+	void rejectsPasswordOverUtf8ByteLimitEvenWithinCharacterLimit() throws Exception {
+		String nonAsciiPassword = "A1" + "é".repeat(70);
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "%s"
+				}
+				""".formatted(nonAsciiPassword);
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.password").exists());
+	}
+
+	@Test
+	void rejectsOversizedOrganizationNameWithValidationDetails() throws Exception {
+		String oversizedName = "a".repeat(256);
+		String requestBody = """
+				{
+				  "organizationName": "%s",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "Sunrise8"
+				}
+				""".formatted(oversizedName);
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.organizationName").exists());
+	}
+
+	@Test
+	void rejectsOversizedEmailWithValidationDetails() throws Exception {
+		String oversizedEmail = "a".repeat(250) + "@acme.test";
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "%s",
+				  "password": "Sunrise8"
+				}
+				""".formatted(oversizedEmail);
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.email").exists());
+	}
+
 }
