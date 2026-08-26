@@ -34,14 +34,4 @@ class RefreshTokenServiceTest {
 		assertThat(refreshTokenService.consume(token)).isEmpty();
 	}
 
-	@Test
-	void revokingALiveTokenMakesAFollowingConsumeReturnEmpty() {
-		UUID userId = UUID.randomUUID();
-		String token = refreshTokenService.issue(userId);
-
-		refreshTokenService.revoke(token);
-
-		assertThat(refreshTokenService.consume(token)).isEmpty();
-	}
-
 }

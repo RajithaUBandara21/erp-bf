@@ -10,7 +10,7 @@ class JwtServiceTest {
 
 	private static final String SECRET = "test-signing-secret-at-least-32-bytes-long-0123456789";
 	private static final AuthenticatedUser USER = new AuthenticatedUser(
-			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test");
+			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID());
 
 	private static JwtService serviceWithAccessTtl(Duration accessTokenTtl) {
 		return new JwtService(new JwtProperties(SECRET, accessTokenTtl, Duration.ofDays(30)));

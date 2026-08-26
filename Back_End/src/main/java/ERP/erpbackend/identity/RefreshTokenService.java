@@ -35,11 +35,6 @@ public class RefreshTokenService {
 		return Optional.ofNullable(userId).map(UUID::fromString);
 	}
 
-	/** Deletes unconditionally, including for an unknown/already-used token, so logout stays idempotent. */
-	public void revoke(String token) {
-		redisTemplate.delete(keyFor(token));
-	}
-
 	private static String generateToken() {
 		byte[] bytes = new byte[TOKEN_BYTES];
 		SECURE_RANDOM.nextBytes(bytes);

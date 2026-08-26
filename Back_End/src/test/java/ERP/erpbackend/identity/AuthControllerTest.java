@@ -14,9 +14,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,6 +31,8 @@ import org.springframework.web.server.ResponseStatusException;
 @WebMvcTest(
 		controllers = AuthController.class,
 		excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JpaAuditingConfig.class))
+@Import(SecurityConfig.class)
+@ImportAutoConfiguration({ServletWebSecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class})
 class AuthControllerTest {
 
 	@Autowired
@@ -43,6 +49,9 @@ class AuthControllerTest {
 
 	@MockitoBean
 	private LoginRateLimiter loginRateLimiter;
+
+	@MockitoBean
+	private JwtService jwtService;
 
 	@BeforeEach
 	void allowByDefault() {
@@ -246,7 +255,8 @@ class AuthControllerTest {
 				{
 				  "organizationCode": "acme-corp",
 				  "email": "ada@acme.test",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""";
 
@@ -273,7 +283,8 @@ class AuthControllerTest {
 				{
 				  "organizationCode": "acme-corp",
 				  "email": "ada@acme.test",
-				  "password": "WrongPass9"
+				  "password": "WrongPass9",
+				  "clientType": "WEB"
 				}
 				""";
 
@@ -292,7 +303,8 @@ class AuthControllerTest {
 				{
 				  "organizationCode": "acme-corp",
 				  "email": "ada@acme.test",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""";
 

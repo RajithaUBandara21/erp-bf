@@ -20,6 +20,7 @@ public class JwtService {
 	private static final String CLAIM_TENANT_ID = "tenantId";
 	private static final String CLAIM_ORGANIZATION_ID = "organizationId";
 	private static final String CLAIM_EMAIL = "email";
+	private static final String CLAIM_SESSION_ID = "sessionId";
 
 	private final JwtProperties jwtProperties;
 
@@ -30,6 +31,7 @@ public class JwtService {
 				.claim(CLAIM_TENANT_ID, user.tenantId().toString())
 				.claim(CLAIM_ORGANIZATION_ID, user.organizationId().toString())
 				.claim(CLAIM_EMAIL, user.email())
+				.claim(CLAIM_SESSION_ID, user.sessionId().toString())
 				.issuedAt(Date.from(now))
 				.expiration(Date.from(now.plus(jwtProperties.accessTokenTtl())))
 				.signWith(signingKey())
@@ -47,7 +49,8 @@ public class JwtService {
 					UUID.fromString(claims.getSubject()),
 					UUID.fromString(claims.get(CLAIM_TENANT_ID, String.class)),
 					UUID.fromString(claims.get(CLAIM_ORGANIZATION_ID, String.class)),
-					claims.get(CLAIM_EMAIL, String.class)));
+					claims.get(CLAIM_EMAIL, String.class),
+					UUID.fromString(claims.get(CLAIM_SESSION_ID, String.class))));
 		} catch (JwtException | IllegalArgumentException ex) {
 			return Optional.empty();
 		}

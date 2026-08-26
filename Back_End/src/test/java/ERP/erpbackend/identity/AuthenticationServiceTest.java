@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import ERP.erpbackend.TestcontainersConfiguration;
 import ERP.erpbackend.organization.Tenant;
 import ERP.erpbackend.organization.TenantRepository;
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +39,9 @@ class AuthenticationServiceTest {
 	@Autowired
 	private RefreshTokenService refreshTokenService;
 
+	@Autowired
+	private SessionRepository sessionRepository;
+
 	private String registerAndGetOrganizationCode(String email) {
 		RegisteredAccount account = registrationService.register(
 				new RegisterRequest("Acme Corp " + email, "Ada Owner", email, PASSWORD));
@@ -49,13 +54,29 @@ class AuthenticationServiceTest {
 		String email = "ada@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
 
-		TokenResponse response = authenticationService.login(new LoginRequest(organizationCode, email, PASSWORD));
+		TokenResponse response = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
 
 		AuthenticatedUser authenticatedUser = jwtService.parseAccessToken(response.accessToken()).orElseThrow();
 		assertThat(authenticatedUser.email()).isEqualTo(email);
 		assertThat(authenticatedUser.tenantId()).isEqualTo(response.tenantId());
 
-		assertThat(refreshTokenService.consume(response.refreshToken())).contains(response.userId());
+		assertThat(refreshTokenService.consume(response.refreshToken())).contains(authenticatedUser.sessionId());
+	}
+
+	@Test
+	void loginCreatesASessionWithTheRequestedClientTypeAndMatchingSessionId() {
+		String email = "session@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+
+		TokenResponse response = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.MOBILE));
+
+		AuthenticatedUser authenticatedUser = jwtService.parseAccessToken(response.accessToken()).orElseThrow();
+		Session session = sessionRepository.findById(authenticatedUser.sessionId()).orElseThrow();
+		assertThat(session.getClientType()).isEqualTo(ClientType.MOBILE);
+		assertThat(session.getUserId()).isEqualTo(response.userId());
+		assertThat(session.getTenantId()).isEqualTo(response.tenantId());
 	}
 
 	@Test
@@ -63,7 +84,7 @@ class AuthenticationServiceTest {
 		String email = "wrong-org@acme.test";
 		registerAndGetOrganizationCode(email);
 
-		assertUnauthorized(new LoginRequest("does-not-exist", email, PASSWORD));
+		assertUnauthorized(new LoginRequest("does-not-exist", email, PASSWORD, ClientType.WEB));
 	}
 
 	@Test
@@ -71,7 +92,7 @@ class AuthenticationServiceTest {
 		String email = "wrong-email@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
 
-		assertUnauthorized(new LoginRequest(organizationCode, "someone-else@acme.test", PASSWORD));
+		assertUnauthorized(new LoginRequest(organizationCode, "someone-else@acme.test", PASSWORD, ClientType.WEB));
 	}
 
 	@Test
@@ -79,7 +100,7 @@ class AuthenticationServiceTest {
 		String email = "wrong-password@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
 
-		assertUnauthorized(new LoginRequest(organizationCode, email, "WrongPass9"));
+		assertUnauthorized(new LoginRequest(organizationCode, email, "WrongPass9", ClientType.WEB));
 	}
 
 	@Test
@@ -91,20 +112,66 @@ class AuthenticationServiceTest {
 		user.setActive(false);
 		userRepository.save(user);
 
-		assertUnauthorized(new LoginRequest(organizationCode, email, PASSWORD));
+		assertUnauthorized(new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
 	}
 
 	@Test
 	void validRefreshReturnsNewTokensAndInvalidatesTheOldRefreshToken() {
 		String email = "refresh@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
-		TokenResponse loginResponse = authenticationService.login(new LoginRequest(organizationCode, email, PASSWORD));
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
 
 		TokenResponse refreshed = authenticationService.refresh(new RefreshRequest(loginResponse.refreshToken()));
 
 		assertThat(refreshed.userId()).isEqualTo(loginResponse.userId());
 		assertThat(jwtService.parseAccessToken(refreshed.accessToken())).isPresent();
-		assertThat(refreshTokenService.consume(refreshed.refreshToken())).contains(loginResponse.userId());
+		AuthenticatedUser refreshedUser = jwtService.parseAccessToken(refreshed.accessToken()).orElseThrow();
+		assertThat(refreshTokenService.consume(refreshed.refreshToken())).contains(refreshedUser.sessionId());
+
+		assertUnauthorizedRefresh(new RefreshRequest(loginResponse.refreshToken()));
+	}
+
+	@Test
+	void refreshSlidesTheSessionsLastUsedAtAndExpiresAtForward() {
+		String email = "refresh-slide@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+		UUID sessionId = jwtService.parseAccessToken(loginResponse.accessToken()).orElseThrow().sessionId();
+		Session sessionAfterLogin = sessionRepository.findById(sessionId).orElseThrow();
+
+		authenticationService.refresh(new RefreshRequest(loginResponse.refreshToken()));
+
+		Session sessionAfterRefresh = sessionRepository.findById(sessionId).orElseThrow();
+		assertThat(sessionAfterRefresh.getLastUsedAt()).isAfter(sessionAfterLogin.getLastUsedAt());
+		assertThat(sessionAfterRefresh.getExpiresAt()).isAfter(sessionAfterLogin.getExpiresAt());
+	}
+
+	@Test
+	void refreshFailsForARevokedSessionEvenWithAnUnconsumedRefreshToken() {
+		String email = "refresh-revoked@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+		UUID sessionId = jwtService.parseAccessToken(loginResponse.accessToken()).orElseThrow().sessionId();
+		Session session = sessionRepository.findById(sessionId).orElseThrow();
+		session.setRevokedAt(Instant.now());
+		sessionRepository.save(session);
+
+		assertUnauthorizedRefresh(new RefreshRequest(loginResponse.refreshToken()));
+	}
+
+	@Test
+	void refreshFailsOnceTheSessionsExpiresAtHasPassed() {
+		String email = "refresh-expired@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+		UUID sessionId = jwtService.parseAccessToken(loginResponse.accessToken()).orElseThrow().sessionId();
+		Session session = sessionRepository.findById(sessionId).orElseThrow();
+		session.setExpiresAt(Instant.now().minusSeconds(1));
+		sessionRepository.save(session);
 
 		assertUnauthorizedRefresh(new RefreshRequest(loginResponse.refreshToken()));
 	}
@@ -113,7 +180,8 @@ class AuthenticationServiceTest {
 	void refreshingWithADeactivatedUsersTokenFails() {
 		String email = "refresh-inactive@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
-		TokenResponse loginResponse = authenticationService.login(new LoginRequest(organizationCode, email, PASSWORD));
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
 		User user = userRepository.findById(loginResponse.userId()).orElseThrow();
 		user.setActive(false);
 		userRepository.save(user);
@@ -125,11 +193,26 @@ class AuthenticationServiceTest {
 	void logoutRevokesTheTokenSoAFollowingRefreshFails() {
 		String email = "logout@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
-		TokenResponse loginResponse = authenticationService.login(new LoginRequest(organizationCode, email, PASSWORD));
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
 
 		authenticationService.logout(new RefreshRequest(loginResponse.refreshToken()));
 
 		assertUnauthorizedRefresh(new RefreshRequest(loginResponse.refreshToken()));
+	}
+
+	@Test
+	void logoutMarksTheSessionRevokedInPostgres() {
+		String email = "logout-session@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+		TokenResponse loginResponse = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+		UUID sessionId = jwtService.parseAccessToken(loginResponse.accessToken()).orElseThrow().sessionId();
+
+		authenticationService.logout(new RefreshRequest(loginResponse.refreshToken()));
+
+		Session session = sessionRepository.findById(sessionId).orElseThrow();
+		assertThat(session.getRevokedAt()).isNotNull();
 	}
 
 	private void assertUnauthorized(LoginRequest request) {

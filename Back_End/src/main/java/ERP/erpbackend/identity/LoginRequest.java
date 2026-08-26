@@ -2,6 +2,7 @@ package ERP.erpbackend.identity;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record LoginRequest(
@@ -17,7 +18,10 @@ public record LoginRequest(
 
 		@NotBlank
 		@MaxUtf8Bytes(72)
-		String password
+		String password,
+
+		@NotNull
+		ClientType clientType
 
 ) {
 }
