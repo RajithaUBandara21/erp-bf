@@ -46,7 +46,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
 	private static String slugify(String value) {
 		String slug = NON_ALPHANUMERIC.matcher(value.toLowerCase(Locale.ROOT)).replaceAll("-");
-		return EDGE_HYPHENS.matcher(slug).replaceAll("");
+		slug = EDGE_HYPHENS.matcher(slug).replaceAll("");
+		return slug.isEmpty() ? "org" : slug;
 	}
 
 }

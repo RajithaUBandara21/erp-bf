@@ -42,6 +42,41 @@ class OrganizationServiceImplTest {
 	}
 
 	@Test
+	void fallsBackToOrgPrefixWhenNameHasNoAsciiAlphanumericCharacters() {
+		when(tenantRepository.existsByCode("org")).thenReturn(false);
+		when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		organizationService.createTenantAndOrganization("雅虎");
+
+		ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
+		verify(tenantRepository).save(tenantCaptor.capture());
+		assertThat(tenantCaptor.getValue().getCode()).isEqualTo("org");
+
+		ArgumentCaptor<Organization> organizationCaptor = ArgumentCaptor.forClass(Organization.class);
+		verify(organizationRepository).save(organizationCaptor.capture());
+		assertThat(organizationCaptor.getValue().getCode()).isEqualTo("org");
+	}
+
+	@Test
+	void retriesOrgPrefixWithNumericSuffixWhenTaken() {
+		when(tenantRepository.existsByCode("org")).thenReturn(true);
+		when(tenantRepository.existsByCode("org-2")).thenReturn(false);
+		when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		organizationService.createTenantAndOrganization("@@@");
+
+		ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
+		verify(tenantRepository).save(tenantCaptor.capture());
+		assertThat(tenantCaptor.getValue().getCode()).isEqualTo("org-2");
+
+		ArgumentCaptor<Organization> organizationCaptor = ArgumentCaptor.forClass(Organization.class);
+		verify(organizationRepository).save(organizationCaptor.capture());
+		assertThat(organizationCaptor.getValue().getCode()).isEqualTo("org-2");
+	}
+
+	@Test
 	void retriesWithNumericSuffixUntilCodeIsFree() {
 		when(tenantRepository.existsByCode("acme-corp")).thenReturn(true);
 		when(tenantRepository.existsByCode("acme-corp-2")).thenReturn(true);
