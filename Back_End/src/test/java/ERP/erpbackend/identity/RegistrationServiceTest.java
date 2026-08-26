@@ -63,4 +63,15 @@ class RegistrationServiceTest {
 		assertThat(secondAccount.organizationId()).isNotEqualTo(firstAccount.organizationId());
 	}
 
+	@Test
+	void normalizesEmailCasingBeforeStorage() {
+		RegisterRequest request = new RegisterRequest("Acme Corp", "Ada Owner", "Ada.Owner@ACME.test", "Sunrise8");
+
+		RegisteredAccount account = registrationService.register(request);
+
+		User user = userRepository.findById(account.userId()).orElseThrow();
+		assertThat(user.getEmail()).isEqualTo("ada.owner@acme.test");
+		assertThat(account.email()).isEqualTo("ada.owner@acme.test");
+	}
+
 }

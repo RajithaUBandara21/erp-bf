@@ -2,6 +2,7 @@ package ERP.erpbackend.identity;
 
 import ERP.erpbackend.organization.OrganizationService;
 import ERP.erpbackend.organization.TenantOrganization;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public class RegistrationService {
 		User user = new User();
 		user.setTenantId(tenantOrganization.tenantId());
 		user.setOrganizationId(tenantOrganization.organizationId());
-		user.setEmail(request.email());
+		user.setEmail(request.email().toLowerCase(Locale.ROOT));
 		user.setPasswordHash(passwordEncoder.encode(request.password()));
 		user.setFullName(request.fullName());
 		user = userRepository.save(user);
