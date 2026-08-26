@@ -1,6 +1,7 @@
 package ERP.erpbackend.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 
 import ERP.erpbackend.TestcontainersConfiguration;
 import ERP.erpbackend.organization.Organization;
@@ -72,6 +73,18 @@ class RegistrationServiceTest {
 		User user = userRepository.findById(account.userId()).orElseThrow();
 		assertThat(user.getEmail()).isEqualTo("ada.owner@acme.test");
 		assertThat(account.email()).isEqualTo("ada.owner@acme.test");
+	}
+
+	@Test
+	void rollsBackTenantAndOrganizationWhenUserSaveFails() {
+		long tenantsBefore = tenantRepository.count();
+		long organizationsBefore = organizationRepository.count();
+		RegisterRequest request = new RegisterRequest("Acme Corp", null, "ada@acme.test", "Sunrise8");
+
+		assertThatException().isThrownBy(() -> registrationService.register(request));
+
+		assertThat(tenantRepository.count()).isEqualTo(tenantsBefore);
+		assertThat(organizationRepository.count()).isEqualTo(organizationsBefore);
 	}
 
 }

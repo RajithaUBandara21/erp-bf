@@ -86,6 +86,28 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void registersAccountWithPasswordAtExactUtf8ByteLimit() throws Exception {
+		String passwordAtLimit = "A1" + "a".repeat(70);
+		RegisteredAccount account = new RegisteredAccount(
+				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test");
+		when(registrationService.register(any(RegisterRequest.class))).thenReturn(account);
+
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "%s"
+				}
+				""".formatted(passwordAtLimit);
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
 	void rejectsOversizedPasswordWithValidationDetails() throws Exception {
 		String oversizedPassword = "A1" + "a".repeat(72);
 		String requestBody = """
