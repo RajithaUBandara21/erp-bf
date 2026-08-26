@@ -9,12 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+// Also covers RegistrationRateLimiter: both are identically-shaped delegates
+// to IpRateLimiter, differing only in Redis key prefix (see F-03).
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
-class RegistrationRateLimiterTest {
+class LoginRateLimiterTest {
 
 	@Autowired
-	private RegistrationRateLimiter rateLimiter;
+	private LoginRateLimiter rateLimiter;
 
 	@Test
 	void deniesRequestsOnceLimitIsExceededWithinTheWindow() {

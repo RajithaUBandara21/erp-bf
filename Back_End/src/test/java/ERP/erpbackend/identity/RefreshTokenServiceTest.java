@@ -17,18 +17,18 @@ class RefreshTokenServiceTest {
 	private RefreshTokenService refreshTokenService;
 
 	@Test
-	void issuingThenConsumingReturnsTheIssuedUserId() {
-		UUID userId = UUID.randomUUID();
+	void issuingThenConsumingReturnsTheIssuedSessionId() {
+		UUID sessionId = UUID.randomUUID();
 
-		String token = refreshTokenService.issue(userId);
+		String token = refreshTokenService.issue(sessionId);
 
-		assertThat(refreshTokenService.consume(token)).contains(userId);
+		assertThat(refreshTokenService.consume(token)).contains(sessionId);
 	}
 
 	@Test
 	void consumingTheSameTokenTwiceReturnsEmptyTheSecondTime() {
-		UUID userId = UUID.randomUUID();
-		String token = refreshTokenService.issue(userId);
+		UUID sessionId = UUID.randomUUID();
+		String token = refreshTokenService.issue(sessionId);
 		refreshTokenService.consume(token);
 
 		assertThat(refreshTokenService.consume(token)).isEmpty();

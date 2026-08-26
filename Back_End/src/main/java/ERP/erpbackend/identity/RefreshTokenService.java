@@ -23,16 +23,16 @@ public class RefreshTokenService {
 	private final StringRedisTemplate redisTemplate;
 	private final JwtProperties jwtProperties;
 
-	public String issue(UUID userId) {
+	public String issue(UUID sessionId) {
 		String token = generateToken();
-		redisTemplate.opsForValue().set(keyFor(token), userId.toString(), jwtProperties.refreshTokenTtl());
+		redisTemplate.opsForValue().set(keyFor(token), sessionId.toString(), jwtProperties.refreshTokenTtl());
 		return token;
 	}
 
 	/** Deletes the key on a hit, so a token is valid for exactly one use. */
 	public Optional<UUID> consume(String token) {
-		String userId = redisTemplate.opsForValue().getAndDelete(keyFor(token));
-		return Optional.ofNullable(userId).map(UUID::fromString);
+		String sessionId = redisTemplate.opsForValue().getAndDelete(keyFor(token));
+		return Optional.ofNullable(sessionId).map(UUID::fromString);
 	}
 
 	private static String generateToken() {
