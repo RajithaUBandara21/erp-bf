@@ -2,6 +2,8 @@ package ERP.erpbackend.organization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -93,6 +95,21 @@ class OrganizationServiceImplTest {
 		ArgumentCaptor<Organization> organizationCaptor = ArgumentCaptor.forClass(Organization.class);
 		verify(organizationRepository).save(organizationCaptor.capture());
 		assertThat(organizationCaptor.getValue().getCode()).isEqualTo("acme-corp-3");
+	}
+
+	@Test
+	void fallsBackToRandomSuffixOnceNumericSuffixesAreExhausted() {
+		when(tenantRepository.existsByCode(anyString())).thenReturn(true);
+		when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		organizationService.createTenantAndOrganization("Acme Corp");
+
+		verify(tenantRepository, times(6)).existsByCode(anyString());
+
+		ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
+		verify(tenantRepository).save(tenantCaptor.capture());
+		assertThat(tenantCaptor.getValue().getCode()).matches("acme-corp-[0-9a-f]{8}");
 	}
 
 }

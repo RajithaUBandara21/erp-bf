@@ -1,6 +1,7 @@
 package ERP.erpbackend.organization;
 
 import java.util.Locale;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,9 @@ public class OrganizationServiceImpl implements OrganizationService {
 
 	private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^a-z0-9]+");
 	private static final Pattern EDGE_HYPHENS = Pattern.compile("^-+|-+$");
+
+	/** Highest numeric suffix tried before falling back to a random suffix. */
+	private static final int MAX_NUMERIC_SUFFIX = 6;
 
 	private final TenantRepository tenantRepository;
 	private final OrganizationRepository organizationRepository;
@@ -36,12 +40,20 @@ public class OrganizationServiceImpl implements OrganizationService {
 	private String uniqueCodeFor(String organizationName) {
 		String base = slugify(organizationName);
 		String candidate = base;
-		int suffix = 2;
-		while (tenantRepository.existsByCode(candidate)) {
+		for (int suffix = 2; suffix <= MAX_NUMERIC_SUFFIX; suffix++) {
+			if (!tenantRepository.existsByCode(candidate)) {
+				return candidate;
+			}
 			candidate = base + "-" + suffix;
-			suffix++;
 		}
-		return candidate;
+		if (!tenantRepository.existsByCode(candidate)) {
+			return candidate;
+		}
+		// Every numeric suffix up to MAX_NUMERIC_SUFFIX collided (or another
+		// request is racing this one) - fall back to a random suffix rather
+		// than probing forever. A leftover collision here still surfaces as a
+		// 409 via GlobalExceptionHandler, never a raw 500.
+		return base + "-" + UUID.randomUUID().toString().substring(0, 8);
 	}
 
 	private static String slugify(String value) {

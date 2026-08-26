@@ -1,6 +1,9 @@
 package ERP.erpbackend.identity;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -8,11 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ERP.erpbackend.common.JpaAuditingConfig;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +32,14 @@ class AuthControllerTest {
 
 	@MockitoBean
 	private RegistrationService registrationService;
+
+	@MockitoBean
+	private RegistrationRateLimiter registrationRateLimiter;
+
+	@BeforeEach
+	void allowByDefault() {
+		when(registrationRateLimiter.allow(anyString())).thenReturn(true);
+	}
 
 	@Test
 	void registersAccountAndReturns201() throws Exception {
@@ -146,6 +159,49 @@ class AuthControllerTest {
 						.content(requestBody))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.errors.email").exists());
+	}
+
+	@Test
+	void returnsConflictWhenRegistrationRacesAnotherRequestForTheSameCode() throws Exception {
+		when(registrationService.register(any(RegisterRequest.class)))
+				.thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"));
+
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "Sunrise8"
+				}
+				""";
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").exists());
+	}
+
+	@Test
+	void returnsTooManyRequestsWhenRateLimitExceeded() throws Exception {
+		when(registrationRateLimiter.allow(anyString())).thenReturn(false);
+
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "Sunrise8"
+				}
+				""";
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isTooManyRequests())
+				.andExpect(jsonPath("$.message").exists());
+
+		verify(registrationService, never()).register(any(RegisterRequest.class));
 	}
 
 }
