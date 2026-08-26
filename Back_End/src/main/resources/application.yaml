@@ -13,6 +13,13 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
 
+app:
+  jwt:
+    # Dev-only default (256-bit+) - always override JWT_SECRET outside local dev.
+    secret: ${JWT_SECRET:dev-only-insecure-jwt-signing-secret-change-me-in-production-0123456789}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:30d}
+
 management:
   endpoints:
     web:

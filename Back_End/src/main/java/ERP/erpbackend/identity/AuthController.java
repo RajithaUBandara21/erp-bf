@@ -18,6 +18,8 @@ public class AuthController {
 
 	private final RegistrationService registrationService;
 	private final RegistrationRateLimiter registrationRateLimiter;
+	private final AuthenticationService authenticationService;
+	private final LoginRateLimiter loginRateLimiter;
 
 	@PostMapping("/register")
 	public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request,
@@ -28,6 +30,27 @@ public class AuthController {
 		}
 		RegisteredAccount account = registrationService.register(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(RegisterResponse.from(account));
+	}
+
+	@PostMapping("/login")
+	public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request,
+			HttpServletRequest servletRequest) {
+		if (!loginRateLimiter.allow(servletRequest.getRemoteAddr())) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Too many login attempts. Please try again later.");
+		}
+		return ResponseEntity.ok(authenticationService.login(request));
+	}
+
+	@PostMapping("/refresh")
+	public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+		return ResponseEntity.ok(authenticationService.refresh(request));
+	}
+
+	@PostMapping("/logout")
+	public ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequest request) {
+		authenticationService.logout(request);
+		return ResponseEntity.noContent().build();
 	}
 
 }

@@ -1,6 +1,7 @@
 package ERP.erpbackend.organization;
 
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,11 @@ public class OrganizationServiceImpl implements OrganizationService {
 		organization = organizationRepository.save(organization);
 
 		return new TenantOrganization(tenant.getId(), organization.getId());
+	}
+
+	@Override
+	public Optional<UUID> findTenantIdByCode(String code) {
+		return tenantRepository.findByCode(code).map(Tenant::getId);
 	}
 
 	private String uniqueCodeFor(String organizationName) {

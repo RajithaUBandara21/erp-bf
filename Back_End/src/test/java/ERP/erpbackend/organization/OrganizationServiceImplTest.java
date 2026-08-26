@@ -7,12 +7,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class OrganizationServiceImplTest {
@@ -110,6 +113,25 @@ class OrganizationServiceImplTest {
 		ArgumentCaptor<Tenant> tenantCaptor = ArgumentCaptor.forClass(Tenant.class);
 		verify(tenantRepository).save(tenantCaptor.capture());
 		assertThat(tenantCaptor.getValue().getCode()).matches("acme-corp-[0-9a-f]{8}");
+	}
+
+	@Test
+	void findTenantIdByCodeReturnsTheMatchingTenantsId() {
+		UUID tenantId = UUID.randomUUID();
+		Tenant tenant = new Tenant();
+		tenant.setName("Acme Corp");
+		tenant.setCode("acme-corp");
+		ReflectionTestUtils.setField(tenant, "id", tenantId);
+		when(tenantRepository.findByCode("acme-corp")).thenReturn(Optional.of(tenant));
+
+		assertThat(organizationService.findTenantIdByCode("acme-corp")).contains(tenantId);
+	}
+
+	@Test
+	void findTenantIdByCodeReturnsEmptyWhenNoTenantMatches() {
+		when(tenantRepository.findByCode("missing")).thenReturn(Optional.empty());
+
+		assertThat(organizationService.findTenantIdByCode("missing")).isEmpty();
 	}
 
 }
