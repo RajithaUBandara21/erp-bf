@@ -43,8 +43,8 @@ class AuthenticationServiceTest {
 	private SessionRepository sessionRepository;
 
 	private String registerAndGetOrganizationCode(String email) {
-		RegisteredAccount account = registrationService.register(
-				new RegisterRequest("Acme Corp " + email, "Ada Owner", email, PASSWORD));
+		TokenResponse account = registrationService.register(
+				new RegisterRequest("Acme Corp " + email, "Ada Owner", email, PASSWORD, ClientType.WEB));
 		Tenant tenant = tenantRepository.findById(account.tenantId()).orElseThrow();
 		return tenant.getCode();
 	}

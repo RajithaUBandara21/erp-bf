@@ -6,6 +6,7 @@ public record TokenResponse(
 		String accessToken,
 		String refreshToken,
 		long expiresIn,
+		long refreshExpiresIn,
 		UUID userId,
 		UUID tenantId,
 		UUID organizationId,

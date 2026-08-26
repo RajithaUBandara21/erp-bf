@@ -61,8 +61,8 @@ class AuthControllerTest {
 
 	@Test
 	void registersAccountAndReturns201() throws Exception {
-		RegisteredAccount account = new RegisteredAccount(
-				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test");
+		TokenResponse account = new TokenResponse("access-token", "refresh-token", 900L, 2592000L,
+				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", "Ada Owner");
 		when(registrationService.register(any(RegisterRequest.class))).thenReturn(account);
 
 		String requestBody = """
@@ -70,7 +70,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""";
 
@@ -78,6 +79,10 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(requestBody))
 				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+				.andExpect(jsonPath("$.expiresIn").value(900))
+				.andExpect(jsonPath("$.refreshExpiresIn").value(2592000))
 				.andExpect(jsonPath("$.userId").value(account.userId().toString()))
 				.andExpect(jsonPath("$.tenantId").value(account.tenantId().toString()))
 				.andExpect(jsonPath("$.organizationId").value(account.organizationId().toString()))
@@ -91,7 +96,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "",
-				  "password": "weak"
+				  "password": "weak",
+				  "clientType": "WEB"
 				}
 				""";
 
@@ -104,10 +110,28 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void rejectsMissingClientTypeWithValidationDetails() throws Exception {
+		String requestBody = """
+				{
+				  "organizationName": "Acme Corp",
+				  "fullName": "Ada Owner",
+				  "email": "ada@acme.test",
+				  "password": "Sunrise8"
+				}
+				""";
+
+		mockMvc.perform(post("/api/auth/register")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.clientType").exists());
+	}
+
+	@Test
 	void registersAccountWithPasswordAtExactUtf8ByteLimit() throws Exception {
 		String passwordAtLimit = "A1" + "a".repeat(70);
-		RegisteredAccount account = new RegisteredAccount(
-				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test");
+		TokenResponse account = new TokenResponse("access-token", "refresh-token", 900L, 2592000L,
+				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", "Ada Owner");
 		when(registrationService.register(any(RegisterRequest.class))).thenReturn(account);
 
 		String requestBody = """
@@ -115,7 +139,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "%s"
+				  "password": "%s",
+				  "clientType": "WEB"
 				}
 				""".formatted(passwordAtLimit);
 
@@ -133,7 +158,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "%s"
+				  "password": "%s",
+				  "clientType": "WEB"
 				}
 				""".formatted(oversizedPassword);
 
@@ -152,7 +178,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "%s"
+				  "password": "%s",
+				  "clientType": "WEB"
 				}
 				""".formatted(nonAsciiPassword);
 
@@ -171,7 +198,8 @@ class AuthControllerTest {
 				  "organizationName": "%s",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""".formatted(oversizedName);
 
@@ -190,7 +218,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "%s",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""".formatted(oversizedEmail);
 
@@ -211,7 +240,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""";
 
@@ -231,7 +261,8 @@ class AuthControllerTest {
 				  "organizationName": "Acme Corp",
 				  "fullName": "Ada Owner",
 				  "email": "ada@acme.test",
-				  "password": "Sunrise8"
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
 				}
 				""";
 
@@ -247,7 +278,7 @@ class AuthControllerTest {
 	@Test
 	void loginReturnsTokenShapeOnSuccess() throws Exception {
 		TokenResponse tokenResponse = new TokenResponse(
-				"access-token", "refresh-token", 900L,
+				"access-token", "refresh-token", 900L, 2592000L,
 				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", "Ada Owner");
 		when(authenticationService.login(any(LoginRequest.class))).thenReturn(tokenResponse);
 
@@ -267,6 +298,7 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.accessToken").value("access-token"))
 				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
 				.andExpect(jsonPath("$.expiresIn").value(900))
+				.andExpect(jsonPath("$.refreshExpiresIn").value(2592000))
 				.andExpect(jsonPath("$.userId").value(tokenResponse.userId().toString()))
 				.andExpect(jsonPath("$.tenantId").value(tokenResponse.tenantId().toString()))
 				.andExpect(jsonPath("$.organizationId").value(tokenResponse.organizationId().toString()))
@@ -320,7 +352,7 @@ class AuthControllerTest {
 	@Test
 	void refreshReturnsTokenShapeOnSuccess() throws Exception {
 		TokenResponse tokenResponse = new TokenResponse(
-				"new-access-token", "new-refresh-token", 900L,
+				"new-access-token", "new-refresh-token", 900L, 2592000L,
 				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", "Ada Owner");
 		when(authenticationService.refresh(any(RefreshRequest.class))).thenReturn(tokenResponse);
 

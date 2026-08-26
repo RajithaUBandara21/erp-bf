@@ -2,6 +2,7 @@ package ERP.erpbackend.identity;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -26,7 +27,10 @@ public record RegisterRequest(
 				regexp = "^(?=.*[0-9])(?=.*[A-Z]).{8,}$",
 				message = "Password must be at least 8 characters, with one number and one uppercase letter"
 		)
-		String password
+		String password,
+
+		@NotNull
+		ClientType clientType
 
 ) {
 }

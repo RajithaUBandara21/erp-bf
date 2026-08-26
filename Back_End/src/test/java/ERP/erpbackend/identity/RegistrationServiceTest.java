@@ -35,9 +35,10 @@ class RegistrationServiceTest {
 
 	@Test
 	void registersLinkedTenantOrganizationAndUserWithHashedPassword() {
-		RegisterRequest request = new RegisterRequest("Acme Corp", "Ada Owner", "ada@acme.test", "Sunrise8");
+		RegisterRequest request =
+				new RegisterRequest("Acme Corp", "Ada Owner", "ada@acme.test", "Sunrise8", ClientType.WEB);
 
-		RegisteredAccount account = registrationService.register(request);
+		TokenResponse account = registrationService.register(request);
 
 		Tenant tenant = tenantRepository.findById(account.tenantId()).orElseThrow();
 		Organization organization = organizationRepository.findById(account.organizationId()).orElseThrow();
@@ -53,12 +54,27 @@ class RegistrationServiceTest {
 	}
 
 	@Test
-	void independentRegistrationsWithSameOrganizationNameGetDifferentTenants() {
-		RegisterRequest first = new RegisterRequest("Acme Corp", "First Owner", "first@acme.test", "Sunrise8");
-		RegisterRequest second = new RegisterRequest("Acme Corp", "Second Owner", "second@acme.test", "Sunrise8");
+	void registrationReturnsUsableAccessAndRefreshTokens() {
+		RegisterRequest request =
+				new RegisterRequest("Acme Corp", "Ada Owner", "ada-tokens@acme.test", "Sunrise8", ClientType.WEB);
 
-		RegisteredAccount firstAccount = registrationService.register(first);
-		RegisteredAccount secondAccount = registrationService.register(second);
+		TokenResponse response = registrationService.register(request);
+
+		assertThat(response.accessToken()).isNotBlank();
+		assertThat(response.refreshToken()).isNotBlank();
+		assertThat(response.expiresIn()).isPositive();
+		assertThat(response.refreshExpiresIn()).isPositive();
+	}
+
+	@Test
+	void independentRegistrationsWithSameOrganizationNameGetDifferentTenants() {
+		RegisterRequest first =
+				new RegisterRequest("Acme Corp", "First Owner", "first@acme.test", "Sunrise8", ClientType.WEB);
+		RegisterRequest second =
+				new RegisterRequest("Acme Corp", "Second Owner", "second@acme.test", "Sunrise8", ClientType.WEB);
+
+		TokenResponse firstAccount = registrationService.register(first);
+		TokenResponse secondAccount = registrationService.register(second);
 
 		assertThat(secondAccount.tenantId()).isNotEqualTo(firstAccount.tenantId());
 		assertThat(secondAccount.organizationId()).isNotEqualTo(firstAccount.organizationId());
@@ -66,9 +82,10 @@ class RegistrationServiceTest {
 
 	@Test
 	void normalizesEmailCasingBeforeStorage() {
-		RegisterRequest request = new RegisterRequest("Acme Corp", "Ada Owner", "Ada.Owner@ACME.test", "Sunrise8");
+		RegisterRequest request =
+				new RegisterRequest("Acme Corp", "Ada Owner", "Ada.Owner@ACME.test", "Sunrise8", ClientType.WEB);
 
-		RegisteredAccount account = registrationService.register(request);
+		TokenResponse account = registrationService.register(request);
 
 		User user = userRepository.findById(account.userId()).orElseThrow();
 		assertThat(user.getEmail()).isEqualTo("ada.owner@acme.test");
@@ -79,7 +96,7 @@ class RegistrationServiceTest {
 	void rollsBackTenantAndOrganizationWhenUserSaveFails() {
 		long tenantsBefore = tenantRepository.count();
 		long organizationsBefore = organizationRepository.count();
-		RegisterRequest request = new RegisterRequest("Acme Corp", null, "ada@acme.test", "Sunrise8");
+		RegisterRequest request = new RegisterRequest("Acme Corp", null, "ada@acme.test", "Sunrise8", ClientType.WEB);
 
 		assertThatException().isThrownBy(() -> registrationService.register(request));
 

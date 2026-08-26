@@ -36,11 +36,16 @@ class SessionServiceTest {
 	@Autowired
 	private SessionService sessionService;
 
-	private String registerAndGetOrganizationCode(String email) {
-		RegisteredAccount account = registrationService.register(
-				new RegisterRequest("Acme Corp " + email, "Ada Owner", email, PASSWORD));
-		Tenant tenant = tenantRepository.findById(account.tenantId()).orElseThrow();
-		return tenant.getCode();
+	private record RegisteredOrg(String organizationCode, AuthenticatedUser registrationSession) {
+	}
+
+	/** Registration itself issues a session/token pair now, so it counts as one of the user's devices. */
+	private RegisteredOrg registerOrg(String email) {
+		TokenResponse response = registrationService.register(
+				new RegisterRequest("Acme Corp " + email, "Ada Owner", email, PASSWORD, ClientType.WEB));
+		Tenant tenant = tenantRepository.findById(response.tenantId()).orElseThrow();
+		AuthenticatedUser registrationSession = jwtService.parseAccessToken(response.accessToken()).orElseThrow();
+		return new RegisteredOrg(tenant.getCode(), registrationSession);
 	}
 
 	private AuthenticatedUser loginAs(String organizationCode, String email) {
@@ -52,57 +57,59 @@ class SessionServiceTest {
 	@Test
 	void listReturnsOnlyTheCallersOwnActiveSessionsWithCurrentFlaggedCorrectly() {
 		String email = "list@acme.test";
-		String organizationCode = registerAndGetOrganizationCode(email);
-		AuthenticatedUser firstDevice = loginAs(organizationCode, email);
-		AuthenticatedUser secondDevice = loginAs(organizationCode, email);
+		RegisteredOrg org = registerOrg(email);
+		AuthenticatedUser firstDevice = loginAs(org.organizationCode(), email);
+		AuthenticatedUser secondDevice = loginAs(org.organizationCode(), email);
 
 		List<SessionResponse> sessions = sessionService.listSessions(secondDevice);
 
-		assertThat(sessions).hasSize(2);
+		assertThat(sessions).hasSize(3);
 		assertThat(sessions.stream().filter(SessionResponse::current).map(SessionResponse::id))
 				.containsExactly(secondDevice.sessionId());
 		assertThat(sessions).extracting(SessionResponse::id)
-				.containsExactlyInAnyOrder(firstDevice.sessionId(), secondDevice.sessionId());
+				.containsExactlyInAnyOrder(
+						org.registrationSession().sessionId(), firstDevice.sessionId(), secondDevice.sessionId());
 	}
 
 	@Test
 	void listDoesNotReturnAnotherUsersSessions() {
 		String emailA = "owner-a@acme.test";
-		String organizationCodeA = registerAndGetOrganizationCode(emailA);
-		AuthenticatedUser userA = loginAs(organizationCodeA, emailA);
+		RegisteredOrg orgA = registerOrg(emailA);
+		AuthenticatedUser userA = loginAs(orgA.organizationCode(), emailA);
 
 		String emailB = "owner-b@acme.test";
-		String organizationCodeB = registerAndGetOrganizationCode(emailB);
-		loginAs(organizationCodeB, emailB);
+		RegisteredOrg orgB = registerOrg(emailB);
+		loginAs(orgB.organizationCode(), emailB);
 
 		List<SessionResponse> sessions = sessionService.listSessions(userA);
 
-		assertThat(sessions).extracting(SessionResponse::id).containsExactly(userA.sessionId());
+		assertThat(sessions).extracting(SessionResponse::id)
+				.containsExactlyInAnyOrder(orgA.registrationSession().sessionId(), userA.sessionId());
 	}
 
 	@Test
 	void revokingSomeoneElsesSessionIdIsRejected() {
 		String emailA = "victim@acme.test";
-		String organizationCodeA = registerAndGetOrganizationCode(emailA);
-		AuthenticatedUser victim = loginAs(organizationCodeA, emailA);
+		RegisteredOrg orgA = registerOrg(emailA);
+		AuthenticatedUser victim = loginAs(orgA.organizationCode(), emailA);
 
 		String emailB = "attacker@acme.test";
-		String organizationCodeB = registerAndGetOrganizationCode(emailB);
-		AuthenticatedUser attacker = loginAs(organizationCodeB, emailB);
+		RegisteredOrg orgB = registerOrg(emailB);
+		AuthenticatedUser attacker = loginAs(orgB.organizationCode(), emailB);
 
 		assertThatExceptionOfType(ResponseStatusException.class)
 				.isThrownBy(() -> sessionService.revokeSession(attacker, victim.sessionId()))
 				.satisfies(ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
 
 		assertThat(sessionService.listSessions(victim).stream().map(SessionResponse::id))
-				.containsExactly(victim.sessionId());
+				.containsExactlyInAnyOrder(orgA.registrationSession().sessionId(), victim.sessionId());
 	}
 
 	@Test
 	void revokingAnUnknownSessionIdIsRejected() {
 		String email = "unknown@acme.test";
-		String organizationCode = registerAndGetOrganizationCode(email);
-		AuthenticatedUser user = loginAs(organizationCode, email);
+		RegisteredOrg org = registerOrg(email);
+		AuthenticatedUser user = loginAs(org.organizationCode(), email);
 
 		assertThatExceptionOfType(ResponseStatusException.class)
 				.isThrownBy(() -> sessionService.revokeSession(user, UUID.randomUUID()))
@@ -112,11 +119,11 @@ class SessionServiceTest {
 	@Test
 	void revokeOthersLeavesOnlyTheCurrentSessionListed() {
 		String email = "revoke-others@acme.test";
-		String organizationCode = registerAndGetOrganizationCode(email);
-		loginAs(organizationCode, email);
-		loginAs(organizationCode, email);
-		AuthenticatedUser thirdDevice = loginAs(organizationCode, email);
-		assertThat(sessionService.listSessions(thirdDevice)).hasSize(3);
+		RegisteredOrg org = registerOrg(email);
+		loginAs(org.organizationCode(), email);
+		loginAs(org.organizationCode(), email);
+		AuthenticatedUser thirdDevice = loginAs(org.organizationCode(), email);
+		assertThat(sessionService.listSessions(thirdDevice)).hasSize(4);
 
 		sessionService.revokeOtherSessions(thirdDevice);
 

@@ -22,14 +22,13 @@ public class AuthController {
 	private final LoginRateLimiter loginRateLimiter;
 
 	@PostMapping("/register")
-	public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request,
+	public ResponseEntity<TokenResponse> register(@Valid @RequestBody RegisterRequest request,
 			HttpServletRequest servletRequest) {
 		if (!registrationRateLimiter.allow(servletRequest.getRemoteAddr())) {
 			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
 					"Too many registration attempts. Please try again later.");
 		}
-		RegisteredAccount account = registrationService.register(request);
-		return ResponseEntity.status(HttpStatus.CREATED).body(RegisterResponse.from(account));
+		return ResponseEntity.status(HttpStatus.CREATED).body(registrationService.register(request));
 	}
 
 	@PostMapping("/login")

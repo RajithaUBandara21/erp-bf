@@ -20,9 +20,9 @@ public class AuthenticationService {
 	private final UserRepository userRepository;
 	private final SessionRepository sessionRepository;
 	private final PasswordEncoder passwordEncoder;
-	private final JwtService jwtService;
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenService refreshTokenService;
+	private final SessionTokenIssuer sessionTokenIssuer;
 
 	public TokenResponse login(LoginRequest request) {
 		UUID tenantId = organizationService.findTenantIdByCode(normalize(request.organizationCode()))
@@ -35,8 +35,8 @@ public class AuthenticationService {
 			throw invalidCredentials();
 		}
 
-		Session session = createSession(user, request.clientType());
-		return issueTokens(user, session);
+		Session session = sessionTokenIssuer.createSession(user, request.clientType());
+		return sessionTokenIssuer.issueTokens(user, session);
 	}
 
 	public TokenResponse refresh(RefreshRequest request) {
@@ -56,7 +56,7 @@ public class AuthenticationService {
 		session.setExpiresAt(now.plus(jwtProperties.refreshTokenTtl()));
 		sessionRepository.save(session);
 
-		return issueTokens(user, session);
+		return sessionTokenIssuer.issueTokens(user, session);
 	}
 
 	public void logout(RefreshRequest request) {
@@ -66,26 +66,6 @@ public class AuthenticationService {
 					session.setRevokedAt(Instant.now());
 					sessionRepository.save(session);
 				});
-	}
-
-	private Session createSession(User user, ClientType clientType) {
-		Instant now = Instant.now();
-		Session session = new Session();
-		session.setTenantId(user.getTenantId());
-		session.setUserId(user.getId());
-		session.setClientType(clientType);
-		session.setLastUsedAt(now);
-		session.setExpiresAt(now.plus(jwtProperties.refreshTokenTtl()));
-		return sessionRepository.save(session);
-	}
-
-	private TokenResponse issueTokens(User user, Session session) {
-		AuthenticatedUser authenticatedUser = new AuthenticatedUser(
-				user.getId(), user.getTenantId(), user.getOrganizationId(), user.getEmail(), session.getId());
-		String accessToken = jwtService.issueAccessToken(authenticatedUser);
-		String refreshToken = refreshTokenService.issue(session.getId());
-		return new TokenResponse(accessToken, refreshToken, jwtService.accessTokenTtlSeconds(),
-				user.getId(), user.getTenantId(), user.getOrganizationId(), user.getEmail(), user.getFullName());
 	}
 
 	private static boolean isUsable(Session session) {

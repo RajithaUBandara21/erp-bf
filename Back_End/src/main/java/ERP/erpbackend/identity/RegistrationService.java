@@ -15,9 +15,10 @@ public class RegistrationService {
 	private final OrganizationService organizationService;
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final SessionTokenIssuer sessionTokenIssuer;
 
 	@Transactional
-	public RegisteredAccount register(RegisterRequest request) {
+	public TokenResponse register(RegisterRequest request) {
 		TenantOrganization tenantOrganization =
 				organizationService.createTenantAndOrganization(request.organizationName());
 
@@ -29,8 +30,8 @@ public class RegistrationService {
 		user.setFullName(request.fullName());
 		user = userRepository.save(user);
 
-		return new RegisteredAccount(user.getId(), tenantOrganization.tenantId(),
-				tenantOrganization.organizationId(), user.getEmail());
+		Session session = sessionTokenIssuer.createSession(user, request.clientType());
+		return sessionTokenIssuer.issueTokens(user, session);
 	}
 
 }
