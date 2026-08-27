@@ -11,11 +11,11 @@ export default async function SettingsPage() {
 		redirect("/sign-in");
 	}
 
-	const count = result.success ? result.data.length : null;
+	const count = result.success ? (result.data?.length ?? 0) : null;
 	const blurb =
 		count === null
 			? "Devices currently signed in to your account."
-			: `${count} device${count === 1 ? "" : "s"} currently signed in to your account.`;
+			: `${count} ${count === 1 ? "device" : "devices"} currently signed in to your account.`;
 
 	return (
 		<div>

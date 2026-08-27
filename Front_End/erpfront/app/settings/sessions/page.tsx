@@ -12,7 +12,7 @@ export default async function SessionsPage() {
 		redirect("/sign-in");
 	}
 
-	const sessions = result.success ? result.data : [];
+	const sessions = result.success ? (result.data ?? []) : [];
 	const hasOtherSessions = sessions.some((session) => !session.current);
 
 	return (
