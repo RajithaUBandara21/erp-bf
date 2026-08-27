@@ -47,6 +47,10 @@ export async function hasAccessToken(): Promise<boolean> {
 	return (await cookies()).has(ACCESS_TOKEN_COOKIE);
 }
 
+export async function getRefreshToken(): Promise<string | undefined> {
+	return (await cookies()).get(REFRESH_TOKEN_COOKIE)?.value;
+}
+
 /**
  * Any auth cookie is present - a lone refresh cookie counts, since the proxy can trade it for a
  * fresh access token. Use this to guard `/settings/*` so an in-flight refresh isn't bounced to sign-in.

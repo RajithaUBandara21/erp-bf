@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { postJson } from "@/lib/api";
-import { setAuthCookies } from "@/lib/auth-cookies";
+import { API_BASE_URL, postJson } from "@/lib/api";
+import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
 import type { TokenResponse } from "@/types/auth";
 
 // Mirrors the backend's @Pattern on RegisterRequest.password - UX only, the backend stays authoritative.
@@ -101,4 +101,26 @@ export async function signIn(_prevState: SignInFormState, formData: FormData): P
 
 	await setAuthCookies(result.data, remember);
 	redirect("/");
+}
+
+export async function signOut(): Promise<void> {
+	const refreshToken = await getRefreshToken();
+
+	if (refreshToken) {
+		// Best-effort: revoke the current session server-side. Clearing our own cookies is what
+		// actually signs the user out, so a failed/unreachable logout must not block that.
+		try {
+			await fetch(`${API_BASE_URL}/api/auth/logout`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ refreshToken }),
+				cache: "no-store",
+			});
+		} catch {
+			// swallow - logout is best-effort
+		}
+	}
+
+	await clearAuthCookies();
+	redirect("/sign-in");
 }

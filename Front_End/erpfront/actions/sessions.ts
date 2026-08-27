@@ -32,7 +32,7 @@ export async function revokeSession(_prev: RevokeState, formData: FormData): Pro
 	return {};
 }
 
-export async function revokeOtherSessions(_prev: RevokeState, _formData: FormData): Promise<RevokeState> {
+export async function revokeOtherSessions(): Promise<RevokeState> {
 	const result = await authedFetch("/api/auth/sessions/revoke-others", { method: "POST" });
 
 	if (!result.success) {

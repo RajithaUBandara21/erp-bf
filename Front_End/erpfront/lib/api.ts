@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import type { ActionResult, AuthedResult, ErrorResponse } from "@/types/auth";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth-cookies";
 
-const API_BASE_URL = process.env.INTERNAL_API_BASE_URL ?? "http://localhost:8080";
+export const API_BASE_URL = process.env.INTERNAL_API_BASE_URL ?? "http://localhost:8080";
 
 /** Server-only: never call from a client component, the base URL and any future auth headers stay off the browser. */
 export async function postJson<T>(path: string, body: unknown): Promise<ActionResult<T>> {
