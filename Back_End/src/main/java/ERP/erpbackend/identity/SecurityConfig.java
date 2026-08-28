@@ -24,6 +24,7 @@ import tools.jackson.databind.ObjectMapper;
 public class SecurityConfig {
 
 	private final JwtService jwtService;
+	private final RevokedSessionRegistry revokedSessionRegistry;
 	private final ObjectMapper objectMapper;
 
 	@Bean
@@ -36,7 +37,8 @@ public class SecurityConfig {
 								"/api/auth/logout", "/actuator/health").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(handling -> handling.authenticationEntryPoint(this::sendUnauthorized))
-				.addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+				.addFilterBefore(new JwtAuthenticationFilter(jwtService, revokedSessionRegistry),
+						UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
 

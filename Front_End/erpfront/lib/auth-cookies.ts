@@ -3,6 +3,10 @@ import type { TokenResponse } from "@/types/auth";
 
 export const ACCESS_TOKEN_COOKIE = "accessToken";
 export const REFRESH_TOKEN_COOKIE = "refreshToken";
+// Non-sensitive flag: present iff the login opted into "remember me". The proxy reads it to decide
+// whether a refreshed `refreshToken` cookie stays persistent or session-scoped, since the browser
+// never tells the server how the original cookie was scoped.
+export const REMEMBER_TOKEN_COOKIE = "rememberMe";
 
 // httpOnly + lax + path=/ , shared so setAuthCookies and proxy.ts write these cookies identically.
 const SHARED_COOKIE_OPTIONS = {
@@ -20,26 +24,36 @@ export function accessCookieOptions(expiresIn: number) {
 	return { ...SHARED_COOKIE_OPTIONS, secure: secureOutsideDev(), maxAge: expiresIn };
 }
 
-/** Options for the refresh-token cookie. `remember === false` omits `maxAge` so it dies with the browser session. */
-export function refreshCookieOptions(refreshExpiresIn: number, remember?: boolean) {
+/**
+ * Options for the refresh-token cookie. `remember === false` omits `maxAge` so the cookie dies with
+ * the browser session; `true` persists it for the refresh-token lifetime. The argument is required -
+ * an ambiguous `undefined` is what let the proxy silently upgrade a session cookie to persistent.
+ */
+export function refreshCookieOptions(refreshExpiresIn: number, remember: boolean) {
 	return {
 		...SHARED_COOKIE_OPTIONS,
 		secure: secureOutsideDev(),
-		...(remember === false ? {} : { maxAge: refreshExpiresIn }),
+		...(remember ? { maxAge: refreshExpiresIn } : {}),
 	};
 }
 
 /** The only code that should read/write these cookies - later features (refresh, logout, session list) extend this file, not touch cookies directly. */
-export async function setAuthCookies(tokens: TokenResponse, remember?: boolean): Promise<void> {
+export async function setAuthCookies(tokens: TokenResponse, remember: boolean): Promise<void> {
 	const cookieStore = await cookies();
 	cookieStore.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, accessCookieOptions(tokens.expiresIn));
 	cookieStore.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, refreshCookieOptions(tokens.refreshExpiresIn, remember));
+	if (remember) {
+		cookieStore.set(REMEMBER_TOKEN_COOKIE, "1", refreshCookieOptions(tokens.refreshExpiresIn, true));
+	} else {
+		cookieStore.delete(REMEMBER_TOKEN_COOKIE);
+	}
 }
 
 export async function clearAuthCookies(): Promise<void> {
 	const cookieStore = await cookies();
 	cookieStore.delete(ACCESS_TOKEN_COOKIE);
 	cookieStore.delete(REFRESH_TOKEN_COOKIE);
+	cookieStore.delete(REMEMBER_TOKEN_COOKIE);
 }
 
 /** A live access token is present. Use this where only a real, usable session should count (e.g. the sign-in page). */

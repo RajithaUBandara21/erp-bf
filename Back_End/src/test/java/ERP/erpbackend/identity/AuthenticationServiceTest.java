@@ -2,6 +2,9 @@ package ERP.erpbackend.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 import ERP.erpbackend.TestcontainersConfiguration;
 import ERP.erpbackend.organization.Tenant;
@@ -13,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
@@ -41,6 +46,9 @@ class AuthenticationServiceTest {
 
 	@Autowired
 	private SessionRepository sessionRepository;
+
+	@MockitoSpyBean
+	private PasswordEncoder passwordEncoder;
 
 	private String registerAndGetOrganizationCode(String email) {
 		TokenResponse account = registrationService.register(
@@ -101,6 +109,22 @@ class AuthenticationServiceTest {
 		String organizationCode = registerAndGetOrganizationCode(email);
 
 		assertUnauthorized(new LoginRequest(organizationCode, email, "WrongPass9", ClientType.WEB));
+	}
+
+	@Test
+	void loginRunsThePasswordHashComparisonForAnUnknownOrganizationCode() {
+		assertUnauthorized(new LoginRequest("no-such-org", "nobody@acme.test", PASSWORD, ClientType.WEB));
+
+		verify(passwordEncoder).matches(eq(PASSWORD), anyString());
+	}
+
+	@Test
+	void loginRunsThePasswordHashComparisonForAnUnknownEmail() {
+		String organizationCode = registerAndGetOrganizationCode("known@acme.test");
+
+		assertUnauthorized(new LoginRequest(organizationCode, "stranger@acme.test", PASSWORD, ClientType.WEB));
+
+		verify(passwordEncoder).matches(eq(PASSWORD), anyString());
 	}
 
 	@Test

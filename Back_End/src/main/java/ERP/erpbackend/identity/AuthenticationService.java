@@ -3,6 +3,7 @@ package ERP.erpbackend.identity;
 import ERP.erpbackend.organization.OrganizationService;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,12 @@ public class AuthenticationService {
 
 	private static final String INVALID_CREDENTIALS = "Invalid credentials";
 
+	// A valid BCrypt hash (strength 10, matching BCryptPasswordEncoder's default) of a throwaway
+	// value. Compared against when no user matches so every login path runs one full hash comparison
+	// and response time can't be used to enumerate valid org codes or emails (F-09).
+	private static final String DUMMY_PASSWORD_HASH =
+			"$2a$10$rj1PzUggzShtDluMqkrXZ.JRijLCAjBsdaPs5nbO6M66EzAE2gyS2";
+
 	private final OrganizationService organizationService;
 	private final UserRepository userRepository;
 	private final SessionRepository sessionRepository;
@@ -23,20 +30,25 @@ public class AuthenticationService {
 	private final JwtProperties jwtProperties;
 	private final RefreshTokenService refreshTokenService;
 	private final SessionTokenIssuer sessionTokenIssuer;
+	private final RevokedSessionRegistry revokedSessionRegistry;
 
 	public TokenResponse login(LoginRequest request) {
-		UUID tenantId = organizationService.findTenantIdByCode(normalize(request.organizationCode()))
-				.orElseThrow(AuthenticationService::invalidCredentials);
+		Optional<User> user = organizationService.findTenantIdByCode(normalize(request.organizationCode()))
+				.flatMap(tenantId ->
+						userRepository.findByTenantIdAndEmail(tenantId, request.email().toLowerCase(Locale.ROOT)));
 
-		User user = userRepository.findByTenantIdAndEmail(tenantId, request.email().toLowerCase(Locale.ROOT))
-				.orElseThrow(AuthenticationService::invalidCredentials);
+		// Run one hash comparison on every path, matched or not, falling back to a fixed dummy hash
+		// when no user was found - mirrors Spring's DaoAuthenticationProvider and closes the timing
+		// oracle (F-09). Failure stays one generic message regardless of which check failed.
+		boolean passwordMatches = passwordEncoder.matches(
+				request.password(), user.map(User::getPasswordHash).orElse(DUMMY_PASSWORD_HASH));
 
-		if (!user.isActive() || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+		if (user.isEmpty() || !user.get().isActive() || !passwordMatches) {
 			throw invalidCredentials();
 		}
 
-		Session session = sessionTokenIssuer.createSession(user, request.clientType());
-		return sessionTokenIssuer.issueTokens(user, session);
+		Session session = sessionTokenIssuer.createSession(user.get(), request.clientType());
+		return sessionTokenIssuer.issueTokens(user.get(), session);
 	}
 
 	public TokenResponse refresh(RefreshRequest request) {
@@ -65,6 +77,7 @@ public class AuthenticationService {
 				.ifPresent(session -> {
 					session.setRevokedAt(Instant.now());
 					sessionRepository.save(session);
+					revokedSessionRegistry.revoke(session.getId());
 				});
 	}
 

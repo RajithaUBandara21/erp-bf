@@ -15,6 +15,13 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
 
 	Optional<Session> findByIdAndTenantIdAndUserId(UUID id, UUID tenantId, UUID userId);
 
+	@Query("""
+			SELECT s.id FROM Session s
+			WHERE s.tenantId = :tenantId AND s.userId = :userId
+			AND s.id <> :currentSessionId AND s.revokedAt IS NULL
+			""")
+	List<UUID> findActiveIdsExceptCurrent(UUID tenantId, UUID userId, UUID currentSessionId);
+
 	@Modifying
 	@Query("""
 			UPDATE Session s SET s.revokedAt = :now

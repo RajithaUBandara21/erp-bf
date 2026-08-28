@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { API_BASE_URL, postJson } from "@/lib/api";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
+import { fetchWithTimeout } from "@/lib/http";
 import type { TokenResponse } from "@/types/auth";
 
 // Mirrors the backend's @Pattern on RegisterRequest.password - UX only, the backend stays authoritative.
@@ -58,7 +59,8 @@ export async function signUp(_prevState: SignUpFormState, formData: FormData): P
 		return { error: result.error, fieldErrors: result.fieldErrors, values };
 	}
 
-	await setAuthCookies(result.data);
+	// Onboarding on a fresh org, no shared-machine signal - persist the session like today.
+	await setAuthCookies(result.data, true);
 	redirect("/");
 }
 
@@ -110,7 +112,7 @@ export async function signOut(): Promise<void> {
 		// Best-effort: revoke the current session server-side. Clearing our own cookies is what
 		// actually signs the user out, so a failed/unreachable logout must not block that.
 		try {
-			await fetch(`${API_BASE_URL}/api/auth/logout`, {
+			await fetchWithTimeout(`${API_BASE_URL}/api/auth/logout`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ refreshToken }),

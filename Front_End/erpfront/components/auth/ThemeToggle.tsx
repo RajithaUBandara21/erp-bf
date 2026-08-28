@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const THEME_KEY = "erp_theme";
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+type Theme = "light" | "dark";
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(THEME_KEY);
-    const initial = stored === "dark" ? "dark" : "light";
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-  }, []);
+// The pre-hydration script in the root layout already set data-theme; read it back rather than
+// re-deriving from localStorage, so this state and the DOM can't disagree.
+function currentTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+}
+
+export function ThemeToggle() {
+  const [theme, setTheme] = useState<Theme>(currentTheme);
 
   function toggle() {
-    const next = theme === "dark" ? "light" : "dark";
+    const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
+    document.documentElement.dataset.theme = next;
     window.localStorage.setItem(THEME_KEY, next);
   }
 

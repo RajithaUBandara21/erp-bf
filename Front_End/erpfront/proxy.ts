@@ -3,9 +3,11 @@ import type { TokenResponse } from "@/types/auth";
 import {
 	ACCESS_TOKEN_COOKIE,
 	REFRESH_TOKEN_COOKIE,
+	REMEMBER_TOKEN_COOKIE,
 	accessCookieOptions,
 	refreshCookieOptions,
 } from "@/lib/auth-cookies";
+import { fetchWithTimeout } from "@/lib/http";
 
 export const config = { matcher: "/settings/:path*" };
 
@@ -32,13 +34,18 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 		return redirectToSignIn(request);
 	}
 
-	// Mirror the new access token onto the request so this same render sees it, then persist both
-	// cookies on the response for the browser. The proxy has no "remember me" signal, so the
-	// refreshed refresh-token cookie is always persistent.
+	// Mirror the new access token onto the request so this same render sees it, then persist the
+	// cookies on the response for the browser. The remember-flag cookie carries the original login's
+	// "remember me" choice: present means keep the refreshed refresh-token cookie persistent, absent
+	// means keep it session-scoped so a deliberate "don't remember me" is not silently upgraded.
+	const remember = request.cookies.has(REMEMBER_TOKEN_COOKIE);
 	request.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken);
 	const response = NextResponse.next({ request });
 	response.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, accessCookieOptions(tokens.expiresIn));
-	response.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, refreshCookieOptions(tokens.refreshExpiresIn));
+	response.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, refreshCookieOptions(tokens.refreshExpiresIn, remember));
+	if (remember) {
+		response.cookies.set(REMEMBER_TOKEN_COOKIE, "1", refreshCookieOptions(tokens.refreshExpiresIn, true));
+	}
 	return response;
 }
 
@@ -52,7 +59,7 @@ function redirectToSignIn(request: NextRequest): NextResponse {
 
 async function refreshTokens(refreshToken: string): Promise<TokenResponse | null> {
 	try {
-		const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+		const res = await fetchWithTimeout(`${API_BASE_URL}/api/auth/refresh`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ refreshToken }),

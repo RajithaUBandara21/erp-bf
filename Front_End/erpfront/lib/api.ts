@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import type { ActionResult, AuthedResult, ErrorResponse } from "@/types/auth";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth-cookies";
+import { fetchWithTimeout } from "@/lib/http";
 
 export const API_BASE_URL = process.env.INTERNAL_API_BASE_URL ?? "http://localhost:8080";
 
@@ -8,7 +9,7 @@ export const API_BASE_URL = process.env.INTERNAL_API_BASE_URL ?? "http://localho
 export async function postJson<T>(path: string, body: unknown): Promise<ActionResult<T>> {
 	let response: Response;
 	try {
-		response = await fetch(`${API_BASE_URL}${path}`, {
+		response = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(body),
@@ -48,7 +49,7 @@ export async function authedFetch<T>(path: string, init?: RequestInit): Promise<
 	let response: Response;
 	try {
 		// Per-user data must never land in Next's fetch cache.
-		response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, cache: "no-store" });
+		response = await fetchWithTimeout(`${API_BASE_URL}${path}`, { ...init, headers, cache: "no-store" });
 	} catch {
 		return { success: false, error: "Unable to reach the server. Please try again." };
 	}

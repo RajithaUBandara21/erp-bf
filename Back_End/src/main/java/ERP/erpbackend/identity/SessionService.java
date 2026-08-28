@@ -16,6 +16,7 @@ public class SessionService {
 	private static final String SESSION_NOT_FOUND = "Session not found";
 
 	private final SessionRepository sessionRepository;
+	private final RevokedSessionRegistry revokedSessionRegistry;
 
 	public List<SessionResponse> listSessions(AuthenticatedUser authenticatedUser) {
 		return sessionRepository
@@ -32,12 +33,16 @@ public class SessionService {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND));
 		session.setRevokedAt(Instant.now());
 		sessionRepository.save(session);
+		revokedSessionRegistry.revoke(session.getId());
 	}
 
 	@Transactional
 	public void revokeOtherSessions(AuthenticatedUser authenticatedUser) {
+		List<UUID> revokedIds = sessionRepository.findActiveIdsExceptCurrent(
+				authenticatedUser.tenantId(), authenticatedUser.userId(), authenticatedUser.sessionId());
 		sessionRepository.revokeAllExceptCurrent(
 				authenticatedUser.tenantId(), authenticatedUser.userId(), authenticatedUser.sessionId(), Instant.now());
+		revokedIds.forEach(revokedSessionRegistry::revoke);
 	}
 
 	private static SessionResponse toResponse(Session session, UUID currentSessionId) {

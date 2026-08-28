@@ -47,6 +47,9 @@ class SessionControllerTest {
 	@MockitoBean
 	private JwtService jwtService;
 
+	@MockitoBean
+	private RevokedSessionRegistry revokedSessionRegistry;
+
 	private static final AuthenticatedUser PRINCIPAL = new AuthenticatedUser(
 			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID());
 

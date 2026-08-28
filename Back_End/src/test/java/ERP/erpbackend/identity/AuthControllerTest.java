@@ -53,6 +53,9 @@ class AuthControllerTest {
 	@MockitoBean
 	private JwtService jwtService;
 
+	@MockitoBean
+	private RevokedSessionRegistry revokedSessionRegistry;
+
 	@BeforeEach
 	void allowByDefault() {
 		when(registrationRateLimiter.allow(anyString())).thenReturn(true);
