@@ -65,7 +65,19 @@ window.ERP = (function () {
       terms_of_service: 'Terms of Service', and_word: 'and', privacy_policy: 'Privacy Policy',
       sessions_title: 'Active sessions', sessions_intro: 'Devices currently signed in to your account.',
       this_device: 'This device', revoke: 'Revoke', revoke_all_others: 'Revoke all other sessions',
-      last_active: 'Last active', signed_in_as: 'Signed in as'
+      last_active: 'Last active', signed_in_as: 'Signed in as',
+      roles_title: 'Roles & permissions',
+      roles_intro: 'Roles bundle permissions. Assign a role to a user to grant everything it allows.',
+      new_role: 'New role', role_col: 'Role', description_col: 'Description', members_col: 'Members', type_col: 'Type',
+      system_role: 'System', custom_role: 'Custom', permissions: 'Permissions', module_col: 'Module',
+      scope_tenant: 'Scope: entire tenant',
+      system_role_note: 'This is a built-in system role. Its permissions are fixed and it cannot be deleted. Duplicate it to make an editable copy.',
+      perm_view: 'View', perm_create: 'Create', perm_edit: 'Edit', perm_delete: 'Delete', perm_approve: 'Approve',
+      perm_legend: 'View lets a user open records. Create, Edit, and Delete change them. Approve confirms documents such as orders and invoices.',
+      role_info: 'Role info', role_name_label: 'Role name', scope_label: 'Scope',
+      scope_hint: 'Branch and store level roles are planned for a later release.',
+      members: 'Members', members_empty: 'No users have this role yet.', add_member: 'Add member',
+      administration: 'Administration'
     },
     si: {
       language: 'භාෂාව', touch: 'ස්පර්ශ', desktop: 'ඩෙස්ක්ටොප්', settings: 'සැකසුම්',
@@ -88,6 +100,8 @@ window.ERP = (function () {
       appearance: 'පෙනුම', theme_color: 'සන්නාම වර්ණය', default_appearance: 'පෙරනිමි පෙනුම',
       light: 'ආලෝකමත්', dark: 'අඳුරු', preferences: 'අභිප්‍රේත', back: 'ආපසු', settings_title: 'සැකසුම්',
       settings_intro: 'මෙම අභිප්‍රේත සියලුම මොඩියුල හරහා අදාළ වේ.', recent: 'මෑත',
+      operations: 'මෙහෙයුම්', business_partners: 'ව්‍යාපාරික හවුල්කරුවන්', finance: 'මූල්‍ය',
+      insight_system: 'තීක්ෂ්ණ බුද්ධිය සහ පද්ධතිය',
       sign_in: 'පිවිසෙන්න', sign_in_desc: 'ඔබගේ Universal ERP කාර්යාලයට පිවිසෙන්න',
       sign_up: 'ඔබගේ කාර්යාලය සාදන්න', sign_up_desc: 'නව සංවිධානයක් සහ පරිපාලක ගිණුමක් සකසන්න',
       create_account: 'ගිණුම සාදන්න', email: 'විද්‍යුත් තැපෑල', password: 'මුරපදය',
@@ -99,7 +113,19 @@ window.ERP = (function () {
       terms_of_service: 'සේවා කොන්දේසි', and_word: 'සහ', privacy_policy: 'පෞද්ගලිකත්ව ප්‍රතිපත්තිය',
       sessions_title: 'සක්‍රිය සැසි', sessions_intro: 'ඔබගේ ගිණුමට දැනට පිවිසී ඇති උපාංග.',
       this_device: 'මෙම උපාංගය', revoke: 'අවලංගු කරන්න', revoke_all_others: 'අනෙකුත් සියලුම සැසි අවලංගු කරන්න',
-      last_active: 'අවසන් වරට සක්‍රිය වූයේ', signed_in_as: 'ලෙස පිවිසී ඇත'
+      last_active: 'අවසන් වරට සක්‍රිය වූයේ', signed_in_as: 'ලෙස පිවිසී ඇත',
+      roles_title: 'භූමිකා සහ අවසර',
+      roles_intro: 'භූමිකා අවසර එකතු කරයි. පරිශීලකයෙකුට භූමිකාවක් පවරා එහි සියලු අවසර ලබා දෙන්න.',
+      new_role: 'නව භූමිකාව', role_col: 'භූමිකාව', description_col: 'විස්තරය', members_col: 'සාමාජිකයන්', type_col: 'වර්ගය',
+      system_role: 'පද්ධතිය', custom_role: 'අභිරුචි', permissions: 'අවසර', module_col: 'මොඩියුලය',
+      scope_tenant: 'විෂය පථය: මුළු ආයතනය',
+      system_role_note: 'මෙය බිල්ට්-ඉන් පද්ධති භූමිකාවකි. එහි අවසර ස්ථිර වන අතර එය මැකිය නොහැක. සංස්කරණය කළ හැකි පිටපතක් සෑදීමට එය අනුපිටපත් කරන්න.',
+      perm_view: 'බලන්න', perm_create: 'සාදන්න', perm_edit: 'සංස්කරණය', perm_delete: 'මකන්න', perm_approve: 'අනුමත කරන්න',
+      perm_legend: 'බැලීම මගින් පරිශීලකයාට වාර්තා විවෘත කළ හැක. සෑදීම, සංස්කරණය සහ මැකීම ඒවා වෙනස් කරයි. අනුමත කිරීම ඇණවුම් සහ ඉන්වොයිසි වැනි ලේඛන තහවුරු කරයි.',
+      role_info: 'භූමිකා තොරතුරු', role_name_label: 'භූමිකාවේ නම', scope_label: 'විෂය පථය',
+      scope_hint: 'ශාඛා සහ වෙළඳසැල් මට්ටමේ භූමිකා පසුකාලීන නිකුතුවක් සඳහා සැලසුම් කර ඇත.',
+      members: 'සාමාජිකයන්', members_empty: 'තවම කිසිදු පරිශීලකයෙකුට මෙම භූමිකාව නොමැත.', add_member: 'සාමාජිකයෙකු එක් කරන්න',
+      administration: 'පරිපාලනය'
     },
     ta: {
       language: 'மொழி', touch: 'தொடு', desktop: 'டெஸ்க்டாப்', settings: 'அமைப்புகள்',
@@ -122,6 +148,8 @@ window.ERP = (function () {
       appearance: 'தோற்றம்', theme_color: 'பிராண்ட் நிறம்', default_appearance: 'இயல்புநிலை தோற்றம்',
       light: 'வெளிச்சம்', dark: 'இருள்', preferences: 'விருப்பங்கள்', back: 'பின்', settings_title: 'அமைப்புகள்',
       settings_intro: 'இந்த விருப்பங்கள் அனைத்து தொகுதிகளிலும் பொருந்தும்.', recent: 'சமீபத்திய',
+      operations: 'செயல்பாடுகள்', business_partners: 'வணிக கூட்டாளர்கள்', finance: 'நிதி',
+      insight_system: 'நுண்ணறிவு மற்றும் கணினி',
       sign_in: 'உள்நுழைக', sign_in_desc: 'உங்கள் Universal ERP பணிமனையில் உள்நுழையவும்',
       sign_up: 'உங்கள் பணிமனையை உருவாக்கவும்', sign_up_desc: 'புதிய நிறுவனம் மற்றும் நிர்வாக கணக்கை அமைக்கவும்',
       create_account: 'கணக்கை உருவாக்கு', email: 'மின்னஞ்சல்', password: 'கடவுச்சொல்',
@@ -133,7 +161,19 @@ window.ERP = (function () {
       terms_of_service: 'சேவை விதிமுறைகள்', and_word: 'மற்றும்', privacy_policy: 'தனியுரிமைக் கொள்கை',
       sessions_title: 'செயலில் உள்ள அமர்வுகள்', sessions_intro: 'உங்கள் கணக்கில் தற்போது உள்நுழைந்துள்ள சாதனங்கள்.',
       this_device: 'இந்த சாதனம்', revoke: 'ரத்து செய்', revoke_all_others: 'மற்ற அனைத்து அமர்வுகளையும் ரத்து செய்',
-      last_active: 'கடைசியாக செயலில் இருந்தது', signed_in_as: 'இப்படி உள்நுழைந்துள்ளீர்கள்'
+      last_active: 'கடைசியாக செயலில் இருந்தது', signed_in_as: 'இப்படி உள்நுழைந்துள்ளீர்கள்',
+      roles_title: 'பங்குகள் மற்றும் அனுமதிகள்',
+      roles_intro: 'பங்குகள் அனுமதிகளைத் தொகுக்கின்றன. ஒரு பயனருக்கு ஒரு பங்கை ஒதுக்கி அது அனுமதிக்கும் அனைத்தையும் வழங்கவும்.',
+      new_role: 'புதிய பங்கு', role_col: 'பங்கு', description_col: 'விளக்கம்', members_col: 'உறுப்பினர்கள்', type_col: 'வகை',
+      system_role: 'கணினி', custom_role: 'தனிப்பயன்', permissions: 'அனுமதிகள்', module_col: 'தொகுதி',
+      scope_tenant: 'நோக்கு: முழு நிறுவனம்',
+      system_role_note: 'இது உள்ளமைந்த கணினி பங்கு. அதன் அனுமதிகள் நிலையானவை, அதை நீக்க முடியாது. திருத்தக்கூடிய நகலை உருவாக்க அதை நகலெடுக்கவும்.',
+      perm_view: 'பார்', perm_create: 'உருவாக்கு', perm_edit: 'திருத்து', perm_delete: 'நீக்கு', perm_approve: 'ஒப்புதல்',
+      perm_legend: 'பார்வை பயனர் பதிவுகளைத் திறக்க அனுமதிக்கிறது. உருவாக்கு, திருத்து, நீக்கு அவற்றை மாற்றுகின்றன. ஒப்புதல் ஆர்டர்கள் மற்றும் விலைப்பட்டியல்கள் போன்ற ஆவணங்களை உறுதிப்படுத்துகிறது.',
+      role_info: 'பங்கு தகவல்', role_name_label: 'பங்கின் பெயர்', scope_label: 'நோக்கு',
+      scope_hint: 'கிளை மற்றும் கடை நிலை பங்குகள் பிற்கால வெளியீட்டிற்குத் திட்டமிடப்பட்டுள்ளன.',
+      members: 'உறுப்பினர்கள்', members_empty: 'இந்தப் பங்கு இன்னும் எந்தப் பயனருக்கும் இல்லை.', add_member: 'உறுப்பினரைச் சேர்',
+      administration: 'நிர்வாகம்'
     }
   };
 
