@@ -67,7 +67,7 @@ class RoleRepositoryTest {
 
 		assertThat(roleRepository.findByTenantId(tenantA.getId())).hasSize(2);
 		assertThat(roleRepository.findByTenantIdAndName(tenantA.getId(), "Owner")).isPresent();
-		assertThat(roleRepository.existsByTenantIdAndName(tenantA.getId(), "Missing")).isFalse();
+		assertThat(roleRepository.findByTenantIdAndName(tenantA.getId(), "Missing")).isEmpty();
 	}
 
 	@Test

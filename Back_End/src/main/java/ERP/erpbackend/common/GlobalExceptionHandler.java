@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -41,6 +42,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		log.warn("Data integrity conflict", ex);
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(new ErrorResponse("The request conflicts with existing data. Please try again.", Map.of()));
+	}
+
+	// Method-security denials (AuthorizationDeniedException extends AccessDeniedException) reach the
+	// advice as a normal exception once past the filter chain; without this they fall through to the
+	// Exception.class handler as a 500 + error log. A denied permission is expected traffic, so warn.
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+		log.warn("Access denied", ex);
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(new ErrorResponse("You do not have permission to perform this action.", Map.of()));
 	}
 
 	@ExceptionHandler(ResponseStatusException.class)
