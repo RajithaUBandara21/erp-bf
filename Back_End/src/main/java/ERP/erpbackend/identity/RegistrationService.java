@@ -16,6 +16,7 @@ public class RegistrationService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final SessionTokenIssuer sessionTokenIssuer;
+	private final SystemRoleProvisioner systemRoleProvisioner;
 
 	@Transactional
 	public TokenResponse register(RegisterRequest request) {
@@ -29,6 +30,8 @@ public class RegistrationService {
 		user.setPasswordHash(passwordEncoder.encode(request.password()));
 		user.setFullName(request.fullName());
 		user = userRepository.save(user);
+
+		systemRoleProvisioner.provisionForNewTenant(tenantOrganization.tenantId(), user.getId());
 
 		Session session = sessionTokenIssuer.createSession(user, request.clientType());
 		return sessionTokenIssuer.issueTokens(user, session);

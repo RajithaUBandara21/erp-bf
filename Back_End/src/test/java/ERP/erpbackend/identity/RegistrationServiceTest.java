@@ -8,6 +8,7 @@ import ERP.erpbackend.organization.Organization;
 import ERP.erpbackend.organization.OrganizationRepository;
 import ERP.erpbackend.organization.Tenant;
 import ERP.erpbackend.organization.TenantRepository;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +33,12 @@ class RegistrationServiceTest {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private RoleRepository roleRepository;
+
+	@Autowired
+	private UserRoleRepository userRoleRepository;
 
 	@Test
 	void registersLinkedTenantOrganizationAndUserWithHashedPassword() {
@@ -93,15 +100,35 @@ class RegistrationServiceTest {
 	}
 
 	@Test
-	void rollsBackTenantAndOrganizationWhenUserSaveFails() {
+	void provisionsSystemRolesAndAssignsOwnerToTheRegisteringUser() {
+		RegisterRequest request =
+				new RegisterRequest("Acme Corp", "Ada Owner", "ada-roles@acme.test", "Sunrise8", ClientType.WEB);
+
+		TokenResponse account = registrationService.register(request);
+
+		List<Role> roles = roleRepository.findByTenantId(account.tenantId());
+		assertThat(roles).extracting(Role::getName)
+				.containsExactlyInAnyOrder("Owner", "Administrator", "Viewer");
+		assertThat(roles).allMatch(Role::isSystemManaged);
+
+		Role owner = roleRepository.findByTenantIdAndName(account.tenantId(), "Owner").orElseThrow();
+		assertThat(userRoleRepository.findByUserId(account.userId()))
+				.singleElement()
+				.satisfies(assignment -> assertThat(assignment.getRoleId()).isEqualTo(owner.getId()));
+	}
+
+	@Test
+	void rollsBackTenantOrganizationAndRolesWhenUserSaveFails() {
 		long tenantsBefore = tenantRepository.count();
 		long organizationsBefore = organizationRepository.count();
+		long rolesBefore = roleRepository.count();
 		RegisterRequest request = new RegisterRequest("Acme Corp", null, "ada@acme.test", "Sunrise8", ClientType.WEB);
 
 		assertThatException().isThrownBy(() -> registrationService.register(request));
 
 		assertThat(tenantRepository.count()).isEqualTo(tenantsBefore);
 		assertThat(organizationRepository.count()).isEqualTo(organizationsBefore);
+		assertThat(roleRepository.count()).isEqualTo(rolesBefore);
 	}
 
 }
