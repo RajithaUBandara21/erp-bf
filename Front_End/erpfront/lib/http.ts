@@ -3,6 +3,9 @@
 
 export const REQUEST_TIMEOUT_MS = 5000;
 
+/** Backend base URL, shared by `lib/api.ts` and `proxy.ts` so the dev fallback can't drift. */
+export const API_BASE_URL = process.env.INTERNAL_API_BASE_URL ?? "http://localhost:8080";
+
 /**
  * `fetch` with a default timeout. Node's `fetch` has none, so a backend that accepts the socket and
  * then stalls would hang the caller indefinitely. The abort rejects the promise like any other

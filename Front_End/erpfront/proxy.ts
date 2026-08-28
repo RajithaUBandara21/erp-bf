@@ -7,12 +7,9 @@ import {
 	accessCookieOptions,
 	refreshCookieOptions,
 } from "@/lib/auth-cookies";
-import { fetchWithTimeout } from "@/lib/http";
+import { fetchWithTimeout, API_BASE_URL } from "@/lib/http";
 
 export const config = { matcher: "/settings/:path*" };
-
-// Proxy runs on the Node.js runtime, so this env var is available (unlike the old Edge middleware).
-const API_BASE_URL = process.env.INTERNAL_API_BASE_URL ?? "http://localhost:8080";
 
 /**
  * Guards `/settings/*`: a live access token passes straight through; an expired one is silently

@@ -1,5 +1,6 @@
 package ERP.erpbackend.identity;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -9,10 +10,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import ERP.erpbackend.common.GlobalExceptionHandler;
 import ERP.erpbackend.common.JpaAuditingConfig;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.security.autoconfigure.web.servlet.SecurityFilterAutoConfiguration;
@@ -56,10 +64,34 @@ class AuthControllerTest {
 	@MockitoBean
 	private RevokedSessionRegistry revokedSessionRegistry;
 
+	private final Logger exceptionHandlerLogger =
+			(Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+	private final ListAppender<ILoggingEvent> logEvents = new ListAppender<>();
+
 	@BeforeEach
 	void allowByDefault() {
 		when(registrationRateLimiter.allow(anyString())).thenReturn(true);
 		when(loginRateLimiter.allow(anyString())).thenReturn(true);
+		logEvents.start();
+		exceptionHandlerLogger.addAppender(logEvents);
+	}
+
+	@AfterEach
+	void detachAppender() {
+		exceptionHandlerLogger.detachAppender(logEvents);
+	}
+
+	@Test
+	void rejectsMalformedJsonBodyWithBadRequestAndNoErrorLog() throws Exception {
+		mockMvc.perform(post("/api/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{ not valid json "))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").exists())
+				.andExpect(jsonPath("$.errors").exists());
+
+		verify(authenticationService, never()).login(any(LoginRequest.class));
+		assertThat(logEvents.list).noneMatch(event -> event.getLevel() == Level.ERROR);
 	}
 
 	@Test

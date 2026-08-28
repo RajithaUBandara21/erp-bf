@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,8 +19,9 @@ export const metadata: Metadata = {
 };
 
 // Runs synchronously during HTML parsing so a saved dark theme is applied before first paint.
-// Mirrors the "erp_theme" key ThemeToggle writes; the try/catch covers localStorage being unavailable.
-const themeScript = `(function(){try{var t=localStorage.getItem("erp_theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}})()`;
+// The key is injected from lib/theme.ts (the script is serialized to HTML so it can't import);
+// the try/catch covers localStorage being unavailable.
+const themeScript = `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

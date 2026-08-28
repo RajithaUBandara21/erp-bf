@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const THEME_KEY = "erp_theme";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 type Theme = "light" | "dark";
 
@@ -20,7 +19,7 @@ export function ThemeToggle() {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.dataset.theme = next;
-    window.localStorage.setItem(THEME_KEY, next);
+    window.localStorage.setItem(THEME_STORAGE_KEY, next);
   }
 
   return (

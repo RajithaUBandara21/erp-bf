@@ -2,6 +2,11 @@ package ERP.erpbackend.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import ERP.erpbackend.TestcontainersConfiguration;
 import ERP.erpbackend.organization.Tenant;
@@ -12,7 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
@@ -35,6 +42,9 @@ class SessionServiceTest {
 
 	@Autowired
 	private SessionService sessionService;
+
+	@MockitoSpyBean
+	private RevokedSessionRegistry revokedSessionRegistry;
 
 	private record RegisteredOrg(String organizationCode, AuthenticatedUser registrationSession) {
 	}
@@ -130,6 +140,43 @@ class SessionServiceTest {
 		List<SessionResponse> remaining = sessionService.listSessions(thirdDevice);
 		assertThat(remaining).extracting(SessionResponse::id).containsExactly(thirdDevice.sessionId());
 		assertThat(remaining.get(0).current()).isTrue();
+	}
+
+	@Test
+	void revokeOthersRecordsEveryOtherSessionInTheRegistryButNotTheCurrentOne() {
+		String email = "revoke-registry@acme.test";
+		RegisteredOrg org = registerOrg(email);
+		loginAs(org.organizationCode(), email);
+		loginAs(org.organizationCode(), email);
+		AuthenticatedUser current = loginAs(org.organizationCode(), email);
+
+		List<UUID> otherIds = sessionService.listSessions(current).stream()
+				.filter(session -> !session.current())
+				.map(SessionResponse::id)
+				.toList();
+		assertThat(otherIds).hasSize(3);
+
+		sessionService.revokeOtherSessions(current);
+
+		otherIds.forEach(id -> verify(revokedSessionRegistry).revoke(id));
+		verify(revokedSessionRegistry, never()).revoke(current.sessionId());
+	}
+
+	@Test
+	void revokeOthersStillCompletesAndPersistsWhenTheRegistryCannotReachRedis() {
+		doThrow(new DataAccessResourceFailureException("redis unavailable"))
+				.when(revokedSessionRegistry).revoke(any(UUID.class));
+
+		String email = "revoke-redis-down@acme.test";
+		RegisteredOrg org = registerOrg(email);
+		loginAs(org.organizationCode(), email);
+		AuthenticatedUser current = loginAs(org.organizationCode(), email);
+
+		assertThatNoException().isThrownBy(() -> sessionService.revokeOtherSessions(current));
+
+		assertThat(sessionService.listSessions(current))
+				.extracting(SessionResponse::id)
+				.containsExactly(current.sessionId());
 	}
 
 }
