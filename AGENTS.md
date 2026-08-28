@@ -47,8 +47,10 @@ multi-tenant SaaS platform without forking the database schema per industry.
 - Build: `pnpm build`
 - Production server: `pnpm start`
 - Lint: `pnpm lint`
+- Browser/E2E tests: `pnpm test:e2e` (Playwright, starts its own dev server)
 
 ## Testing
 
 - Backend: JUnit is already wired via the Spring Boot test starters (`Back_End/src/test/java/ERP/erpbackend/ErpbackendApplicationTests.java`), so `./mvnw test` is a real, working gate.
+- Frontend browser/E2E: Playwright is installed (`Front_End/erpfront/playwright.config.ts`, tests in `Front_End/erpfront/e2e/`). Run via `pnpm test:e2e`. No unit test runner is installed yet (see below), so this covers browser/E2E flows only, per the Browser Verification section of `coding-standards.md`.
 - Frontend: no unit test runner installed yet. Add one before treating frontend logic tests as a gate.

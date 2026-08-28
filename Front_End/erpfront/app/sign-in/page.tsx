@@ -2,10 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { SignInForm } from "@/components/auth/SignInForm";
-import { hasSession } from "@/lib/auth-cookies";
+import { hasAccessToken } from "@/lib/auth-cookies";
 
 export default async function SignInPage() {
-	if (await hasSession()) {
+	// Only a live session bounces you home - a stale/revoked refresh cookie must not lock you out of the form.
+	if (await hasAccessToken()) {
 		redirect("/");
 	}
 

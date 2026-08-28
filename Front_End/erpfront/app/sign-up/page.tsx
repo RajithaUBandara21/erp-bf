@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { SignUpForm } from "@/components/auth/SignUpForm";
-import { hasSession } from "@/lib/auth-cookies";
+import { hasAccessToken } from "@/lib/auth-cookies";
 
 export default async function SignUpPage() {
-	if (await hasSession()) {
+	if (await hasAccessToken()) {
 		redirect("/");
 	}
 

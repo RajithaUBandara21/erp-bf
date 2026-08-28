@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Active sessions - Universal ERP</title>
+<link rel="stylesheet" href="theme.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .icon { width: 18px; height: 18px; display: block; }
+
+  .topbar {
+    height: 56px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 var(--space-4); background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 8px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: var(--space-2); }
+  .brand { font-weight: 700; letter-spacing: -0.01em; display:flex; align-items:center; }
+  .brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: inline-block; margin-right: 8px; }
+  .crumb { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .topbar-select {
+    border: 1px solid var(--border); background: var(--surface-alt); color: var(--text);
+    border-radius: var(--radius-sm); padding: 6px 8px; font-size: 12px; font-family: var(--font-sans); cursor: pointer;
+  }
+  .mode-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .mode-btn { padding: 6px 12px; border: none; background: var(--surface-alt); color: var(--text); font-size: 12px; cursor: pointer; border-left: 1px solid var(--border); font-family: var(--font-sans); }
+  .mode-btn:first-child { border-left: none; }
+  .mode-btn.active { background: var(--accent); color: var(--accent-ink); }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: var(--radius-sm); text-decoration: none;
+    border: 1px solid var(--border); background: var(--surface-alt); color: var(--text);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  }
+  .user-chip {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-family: var(--font-mono);
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; justify-content: center; text-decoration: none;
+    border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent; font-family: var(--font-sans);
+  }
+  .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover { background: var(--surface-alt); }
+  .btn-danger-outline { background: var(--surface); color: var(--danger); border-color: var(--border); }
+  .btn-danger-outline:hover { background: var(--danger-bg); border-color: var(--danger); }
+  .btn-sm { padding: 6px 10px; font-size: 12px; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge-success { background: var(--success-bg); color: var(--success); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+
+  .sessions-main { max-width: 780px; margin: 0 auto; padding: var(--space-4); }
+  .sessions-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); gap: var(--space-3); flex-wrap: wrap; }
+  .sessions-head h1 { margin: 0 0 4px; font-size: 20px; }
+  .sessions-head p { margin: 0; color: var(--muted); font-size: 13px; }
+  .sessions-head-actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+
+  .session-list { display: flex; flex-direction: column; gap: var(--space-2); }
+  .session-row {
+    display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3);
+  }
+  .session-icon {
+    width: 40px; height: 40px; border-radius: var(--radius); background: var(--surface-alt);
+    color: var(--muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .session-row.current .session-icon { background: var(--accent); color: var(--accent-ink); }
+  .session-info { flex: 1; min-width: 0; }
+  .session-title { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 2px; flex-wrap: wrap; }
+  .session-meta { color: var(--muted); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .session-meta .dot { color: var(--faint); }
+  .session-action { flex-shrink: 0; }
+
+  .empty-note { text-align: center; color: var(--muted); font-size: 12px; padding: var(--space-3) 0; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="brand"><span class="brand-mark"></span>Universal ERP</span>
+    <span class="crumb" data-i18n="sessions_title">Active sessions</span>
+  </div>
+  <div class="topbar-right">
+    <select class="topbar-select lang-select" aria-label="Language" title="Language">
+      <option value="en">English</option>
+      <option value="si">සිංහල</option>
+      <option value="ta">தமிழ්</option>
+    </select>
+    <div class="mode-toggle">
+      <button type="button" class="mode-btn touch-btn active" data-i18n="touch">Touch</button>
+      <button type="button" class="mode-btn pc-btn" data-i18n="desktop">Desktop</button>
+    </div>
+    <a class="icon-btn" href="launcher.html" aria-label="Back to launcher" title="Back to launcher">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12,19 5,12 12,5"/></svg>
+    </a>
+    <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/>
+        <line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/>
+        <line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/>
+        <line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/>
+      </svg>
+    </button>
+    <div class="user-chip">RH</div>
+  </div>
+</header>
+
+<main class="sessions-main">
+  <div class="sessions-head">
+    <div>
+      <h1 data-i18n="sessions_title">Active sessions</h1>
+      <p><span data-i18n="signed_in_as">Signed in as</span> owner@northstar-retail.com</p>
+    </div>
+    <div class="sessions-head-actions">
+      <button type="button" class="btn btn-danger-outline" id="revokeAllBtn" data-i18n="revoke_all_others">Revoke all other sessions</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="session-list" id="sessionList">
+
+      <div class="session-row current">
+        <div class="session-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="18" x2="12" y2="21"/></svg>
+        </div>
+        <div class="session-info">
+          <div class="session-title">
+            Chrome on Windows
+            <span class="badge badge-success" data-i18n="this_device">This device</span>
+          </div>
+          <div class="session-meta">
+            <span>Web</span><span class="dot">&middot;</span>
+            <span>Colombo, LK &middot; 10.0.4.21</span><span class="dot">&middot;</span>
+            <span data-i18n="last_active">Last active</span>: <span>now</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="session-row">
+        <div class="session-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        </div>
+        <div class="session-info">
+          <div class="session-title">Universal ERP - iOS app</div>
+          <div class="session-meta">
+            <span>Mobile</span><span class="dot">&middot;</span>
+            <span>Colombo, LK &middot; 10.0.4.55</span><span class="dot">&middot;</span>
+            <span data-i18n="last_active">Last active</span>: <span>12 minutes ago</span>
+          </div>
+        </div>
+        <div class="session-action">
+          <button type="button" class="btn btn-ghost btn-sm revoke-btn" data-i18n="revoke">Revoke</button>
+        </div>
+      </div>
+
+      <div class="session-row">
+        <div class="session-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="session-info">
+          <div class="session-title">Checkout Register 2 (Tablet)</div>
+          <div class="session-meta">
+            <span>Tablet</span><span class="dot">&middot;</span>
+            <span>Kandy Branch &middot; 10.0.6.14</span><span class="dot">&middot;</span>
+            <span data-i18n="last_active">Last active</span>: <span>1 hour ago</span>
+          </div>
+        </div>
+        <div class="session-action">
+          <button type="button" class="btn btn-ghost btn-sm revoke-btn" data-i18n="revoke">Revoke</button>
+        </div>
+      </div>
+
+      <div class="session-row">
+        <div class="session-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="12" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="15" x2="12" y2="21"/></svg>
+        </div>
+        <div class="session-info">
+          <div class="session-title">Edge on Windows</div>
+          <div class="session-meta">
+            <span>Desktop app</span><span class="dot">&middot;</span>
+            <span>Colombo, LK &middot; 10.0.4.88</span><span class="dot">&middot;</span>
+            <span data-i18n="last_active">Last active</span>: <span>yesterday</span>
+          </div>
+        </div>
+        <div class="session-action">
+          <button type="button" class="btn btn-ghost btn-sm revoke-btn" data-i18n="revoke">Revoke</button>
+        </div>
+      </div>
+
+      <div class="session-row">
+        <div class="session-icon">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="18" x2="12" y2="21"/></svg>
+        </div>
+        <div class="session-info">
+          <div class="session-title">Safari on macOS</div>
+          <div class="session-meta">
+            <span>Web</span><span class="dot">&middot;</span>
+            <span>Galle, LK &middot; 10.0.9.32</span><span class="dot">&middot;</span>
+            <span data-i18n="last_active">Last active</span>: <span>6 days ago</span>
+          </div>
+        </div>
+        <div class="session-action">
+          <button type="button" class="btn btn-ghost btn-sm revoke-btn" data-i18n="revoke">Revoke</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="shared.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  var touchBtn = document.querySelector('.topbar .touch-btn');
+  var pcBtn = document.querySelector('.topbar .pc-btn');
+  ERP.wireDensityToggle(touchBtn, pcBtn);
+  ERP.wireLangSelect(document.querySelector('.lang-select'));
+  ERP.initPage();
+
+  function removeRow(row) {
+    row.style.opacity = '0';
+    setTimeout(function () { row.remove(); }, 150);
+  }
+
+  document.querySelectorAll('.revoke-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { removeRow(btn.closest('.session-row')); });
+  });
+
+  document.getElementById('revokeAllBtn').addEventListener('click', function () {
+    document.querySelectorAll('.session-row:not(.current)').forEach(removeRow);
+  });
+})();
+</script>
+</body>
+</html>

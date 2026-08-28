@@ -53,7 +53,19 @@ window.ERP = (function () {
       settings_intro: 'These preferences apply across every module.',
       operations: 'Operations', business_partners: 'Business partners', finance: 'Finance',
       insight_system: 'Insight & system', good_afternoon: 'Good afternoon', dashboard_settings: 'Dashboard settings',
-      recent: 'Recent'
+      recent: 'Recent',
+      sign_in: 'Sign in', sign_in_desc: 'Sign in to your Universal ERP workspace',
+      sign_up: 'Create your workspace', sign_up_desc: 'Set up a new organization and admin account',
+      create_account: 'Create account', email: 'Email', password: 'Password',
+      confirm_password: 'Confirm password', full_name: 'Full name', organization_name: 'Organization name',
+      forgot_password: 'Forgot password?', remember_me: 'Remember me',
+      dont_have_account: "Don't have an account?", already_have_account: 'Already have an account?',
+      invalid_credentials: 'Invalid email or password.', weak_password: 'Password must be at least 8 characters.',
+      passwords_dont_match: 'Passwords do not match.', agree_terms_prefix: 'I agree to the',
+      terms_of_service: 'Terms of Service', and_word: 'and', privacy_policy: 'Privacy Policy',
+      sessions_title: 'Active sessions', sessions_intro: 'Devices currently signed in to your account.',
+      this_device: 'This device', revoke: 'Revoke', revoke_all_others: 'Revoke all other sessions',
+      last_active: 'Last active', signed_in_as: 'Signed in as'
     },
     si: {
       language: 'භාෂාව', touch: 'ස්පර්ශ', desktop: 'ඩෙස්ක්ටොප්', settings: 'සැකසුම්',
@@ -75,7 +87,19 @@ window.ERP = (function () {
       add_attribute: '+ ගුණාංගයක් එක් කරන්න', add_variant: '+ ප්‍රභේදයක් එක් කරන්න', brand_theme: 'සන්නාම තේමාව',
       appearance: 'පෙනුම', theme_color: 'සන්නාම වර්ණය', default_appearance: 'පෙරනිමි පෙනුම',
       light: 'ආලෝකමත්', dark: 'අඳුරු', preferences: 'අභිප්‍රේත', back: 'ආපසු', settings_title: 'සැකසුම්',
-      settings_intro: 'මෙම අභිප්‍රේත සියලුම මොඩියුල හරහා අදාළ වේ.', recent: 'මෑත'
+      settings_intro: 'මෙම අභිප්‍රේත සියලුම මොඩියුල හරහා අදාළ වේ.', recent: 'මෑත',
+      sign_in: 'පිවිසෙන්න', sign_in_desc: 'ඔබගේ Universal ERP කාර්යාලයට පිවිසෙන්න',
+      sign_up: 'ඔබගේ කාර්යාලය සාදන්න', sign_up_desc: 'නව සංවිධානයක් සහ පරිපාලක ගිණුමක් සකසන්න',
+      create_account: 'ගිණුම සාදන්න', email: 'විද්‍යුත් තැපෑල', password: 'මුරපදය',
+      confirm_password: 'මුරපදය තහවුරු කරන්න', full_name: 'සම්පූර්ණ නම', organization_name: 'සංවිධානයේ නම',
+      forgot_password: 'මුරපදය අමතකද?', remember_me: 'මාව මතක තබාගන්න',
+      dont_have_account: 'ගිණුමක් නැද්ද?', already_have_account: 'දැනටමත් ගිණුමක් තිබේද?',
+      invalid_credentials: 'වැරදි විද්‍යුත් තැපෑලක් හෝ මුරපදයක්.', weak_password: 'මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුය.',
+      passwords_dont_match: 'මුරපද නොගැලපේ.', agree_terms_prefix: 'මම එකඟ වෙමි',
+      terms_of_service: 'සේවා කොන්දේසි', and_word: 'සහ', privacy_policy: 'පෞද්ගලිකත්ව ප්‍රතිපත්තිය',
+      sessions_title: 'සක්‍රිය සැසි', sessions_intro: 'ඔබගේ ගිණුමට දැනට පිවිසී ඇති උපාංග.',
+      this_device: 'මෙම උපාංගය', revoke: 'අවලංගු කරන්න', revoke_all_others: 'අනෙකුත් සියලුම සැසි අවලංගු කරන්න',
+      last_active: 'අවසන් වරට සක්‍රිය වූයේ', signed_in_as: 'ලෙස පිවිසී ඇත'
     },
     ta: {
       language: 'மொழி', touch: 'தொடு', desktop: 'டெஸ்க்டாப்', settings: 'அமைப்புகள்',
@@ -97,7 +121,19 @@ window.ERP = (function () {
       add_attribute: '+ பண்பு சேர்', add_variant: '+ மாறுபாடு சேர்', brand_theme: 'பிராண்ட் தீம்',
       appearance: 'தோற்றம்', theme_color: 'பிராண்ட் நிறம்', default_appearance: 'இயல்புநிலை தோற்றம்',
       light: 'வெளிச்சம்', dark: 'இருள்', preferences: 'விருப்பங்கள்', back: 'பின்', settings_title: 'அமைப்புகள்',
-      settings_intro: 'இந்த விருப்பங்கள் அனைத்து தொகுதிகளிலும் பொருந்தும்.', recent: 'சமீபத்திய'
+      settings_intro: 'இந்த விருப்பங்கள் அனைத்து தொகுதிகளிலும் பொருந்தும்.', recent: 'சமீபத்திய',
+      sign_in: 'உள்நுழைக', sign_in_desc: 'உங்கள் Universal ERP பணிமனையில் உள்நுழையவும்',
+      sign_up: 'உங்கள் பணிமனையை உருவாக்கவும்', sign_up_desc: 'புதிய நிறுவனம் மற்றும் நிர்வாக கணக்கை அமைக்கவும்',
+      create_account: 'கணக்கை உருவாக்கு', email: 'மின்னஞ்சல்', password: 'கடவுச்சொல்',
+      confirm_password: 'கடவுச்சொல்லை உறுதிப்படுத்து', full_name: 'முழு பெயர்', organization_name: 'நிறுவனத்தின் பெயர்',
+      forgot_password: 'கடவுச்சொல் மறந்துவிட்டதா?', remember_me: 'என்னை நினைவில் கொள்',
+      dont_have_account: 'கணக்கு இல்லையா?', already_have_account: 'ஏற்கனவே கணக்கு உள்ளதா?',
+      invalid_credentials: 'தவறான மின்னஞ்சல் அல்லது கடவுச்சொல்.', weak_password: 'கடவுச்சொல் குறைந்தது 8 எழுத்துகள் இருக்க வேண்டும்.',
+      passwords_dont_match: 'கடவுச்சொற்கள் பொருந்தவில்லை.', agree_terms_prefix: 'நான் ஒப்புக்கொள்கிறேன்',
+      terms_of_service: 'சேவை விதிமுறைகள்', and_word: 'மற்றும்', privacy_policy: 'தனியுரிமைக் கொள்கை',
+      sessions_title: 'செயலில் உள்ள அமர்வுகள்', sessions_intro: 'உங்கள் கணக்கில் தற்போது உள்நுழைந்துள்ள சாதனங்கள்.',
+      this_device: 'இந்த சாதனம்', revoke: 'ரத்து செய்', revoke_all_others: 'மற்ற அனைத்து அமர்வுகளையும் ரத்து செய்',
+      last_active: 'கடைசியாக செயலில் இருந்தது', signed_in_as: 'இப்படி உள்நுழைந்துள்ளீர்கள்'
     }
   };
 
