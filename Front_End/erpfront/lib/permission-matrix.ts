@@ -1,25 +1,9 @@
+import { RESOURCE_GROUPS } from "@/lib/resource-groups";
 import type { PermissionAction, PermissionCatalogEntry } from "@/types/roles";
 
 // Column order and the resource grouping / labels mirror prototypes/role-detail.html.
 
 export const PERMISSION_ACTIONS: readonly PermissionAction[] = ["VIEW", "CREATE", "EDIT", "DELETE", "APPROVE"];
-
-interface ResourceGroupDef {
-	key: string;
-	label: string;
-	resources: readonly string[];
-}
-
-// Every backend resource (V6__create_permissions_table.sql) must be listed here. A resource the
-// catalog returns that is missing from every group falls through to an "Other" section so it stays
-// visible instead of silently dropping out of the matrix.
-const RESOURCE_GROUPS: readonly ResourceGroupDef[] = [
-	{ key: "operations", label: "Operations", resources: ["product", "inventory", "purchasing", "sales", "pos", "ecommerce"] },
-	{ key: "business_partners", label: "Business partners", resources: ["customer", "supplier", "shipping"] },
-	{ key: "finance", label: "Finance", resources: ["payment", "accounting", "promotion"] },
-	{ key: "insight_system", label: "Insight & system", resources: ["reporting", "notification", "audit"] },
-	{ key: "administration", label: "Administration", resources: ["user", "role", "organization", "billing"] },
-];
 
 const RESOURCE_LABELS: Record<string, string> = {
 	product: "Products",
