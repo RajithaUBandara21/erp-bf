@@ -9,12 +9,16 @@ import {
 } from "@/lib/auth-cookies";
 import { fetchWithTimeout, API_BASE_URL } from "@/lib/http";
 
-export const config = { matcher: "/settings/:path*" };
+// Every route is authenticated except sign-in/sign-up and Next's internal/static paths - the
+// shared (app) layout (build-plan 3b) now guards every module route, not just /settings/*.
+export const config = {
+	matcher: ["/((?!sign-in|sign-up|_next/static|_next/image|favicon.ico).*)"],
+};
 
 /**
- * Guards `/settings/*`: a live access token passes straight through; an expired one is silently
- * rotated from the refresh token; anything else redirects to `/sign-in`. Not a complete auth
- * check on its own - the settings layout and every Server Action re-check independently.
+ * Guards every authenticated route: a live access token passes straight through; an expired one is
+ * silently rotated from the refresh token; anything else redirects to `/sign-in`. Not a complete
+ * auth check on its own - the app-shell layout and every Server Action re-check independently.
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
 	if (request.cookies.has(ACCESS_TOKEN_COOKIE)) {
@@ -47,8 +51,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 // Deliberately does not clear the auth cookies. Refresh tokens are single-use, so two overlapping
-// /settings/* requests after the access token expires both spend the same cookie - one wins, one 401s
-// here. Deleting cookies on that loss would race the winner's fresh Set-Cookie and force a real
+// requests after the access token expires both spend the same cookie - one wins, one 401s here.
+// Deleting cookies on that loss would race the winner's fresh Set-Cookie and force a real
 // re-login (F-04). A genuinely dead token just fails the next refresh too and the user signs in then.
 function redirectToSignIn(request: NextRequest): NextResponse {
 	return NextResponse.redirect(new URL("/sign-in", request.url));
