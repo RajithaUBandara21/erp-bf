@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Audit Logs - Universal ERP</title>
+<link rel="stylesheet" href="theme.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .icon { width: 18px; height: 18px; display: block; }
+
+  .topbar {
+    height: 56px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 var(--space-4); background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 8px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: var(--space-2); }
+  .brand { font-weight: 700; letter-spacing: -0.01em; display:flex; align-items:center; }
+  .brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display: inline-block; margin-right: 8px; }
+  .crumb { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .topbar-select {
+    border: 1px solid var(--border); background: var(--surface-alt); color: var(--text);
+    border-radius: var(--radius-sm); padding: 6px 8px; font-size: 12px; font-family: var(--font-sans); cursor: pointer; max-width: 104px;
+  }
+  .mode-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .mode-btn { padding: 6px 10px; border: none; background: var(--surface-alt); color: var(--text); font-size: 12px; cursor: pointer; border-left: 1px solid var(--border); font-family: var(--font-sans); }
+  .mode-btn:first-child { border-left: none; }
+  .mode-btn.active { background: var(--accent); color: var(--accent-ink); }
+  .swatches { display: flex; gap: 6px; padding-right: var(--space-2); border-right: 1px solid var(--border); }
+  .swatch {
+    width: 16px; height: 16px; border-radius: 50%; border: none;
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--border);
+    background: var(--sw); cursor: pointer; padding: 0;
+  }
+  .swatch.active { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--text); }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: var(--radius-sm); text-decoration: none;
+    border: 1px solid var(--border); background: var(--surface-alt); color: var(--text);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .user-chip {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;
+    font-family: var(--font-mono);
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; justify-content: center; text-decoration: none;
+    border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent; font-family: var(--font-sans);
+  }
+  .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover { background: var(--surface-alt); }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-success { background: var(--success-bg); color: var(--success); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning); }
+  .badge-danger { background: var(--danger-bg); color: var(--danger); }
+  .badge-muted { background: var(--surface-alt); color: var(--muted); }
+
+  .mono { font-family: var(--font-mono); }
+
+  .page-main { max-width: 1280px; margin: 0 auto; padding: var(--space-4); }
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-3); gap: var(--space-3); flex-wrap: wrap; }
+  .page-head-text h1 { margin: 0 0 2px; font-size: 20px; }
+  .page-head-text p { margin: 0; color: var(--muted); font-size: 13px; max-width: 640px; }
+
+  .filters { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; align-items: center; }
+  .filters input, .filters select {
+    padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-family: var(--font-sans); font-size: 13px;
+  }
+  .filters input[type=search] { flex: 1; min-width: 220px; }
+  .date-range { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  .date-range input[type=date] { min-width: 0; }
+  .filter-count { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+  .table-scroll { width: 100%; overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table.data-table { width: 100%; min-width: 980px; border-collapse: collapse; background: var(--surface); }
+  .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  .data-table th {
+    background: var(--surface-alt); color: var(--muted); font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+  }
+  .data-table tbody tr:hover { background: var(--surface-alt); }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+  .data-table tbody tr.hidden-row { display: none; }
+
+  .ts-cell { white-space: nowrap; }
+  .ts-cell .date { color: var(--muted); font-size: 12px; }
+  .actor-cell .name { font-weight: 600; }
+  .actor-cell .sub { color: var(--muted); font-size: 12px; }
+  .entity-cell .type { font-weight: 600; }
+  .entity-cell .id { color: var(--muted); font-size: 12px; }
+
+  .row-btn { display: inline-flex; align-items: center; gap: 6px; width: auto; height: 30px; padding: 0 10px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm); cursor: pointer; color: var(--text); font-size: 12px; font-family: var(--font-sans); }
+  .row-btn:hover { background: var(--surface-alt); border-color: var(--accent); color: var(--accent); }
+  .row-btn .icon { width: 14px; height: 14px; }
+
+  .empty-state { padding: 48px var(--space-4); text-align: center; color: var(--muted); font-size: 13px; }
+
+  /* slide-over diff panel */
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(15, 20, 32, 0.4); opacity: 0; pointer-events: none;
+    transition: opacity .15s ease; z-index: 20;
+  }
+  .backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .slideover {
+    position: fixed; top: 0; right: 0; height: 100%; width: min(460px, 100vw);
+    background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow-md);
+    transform: translateX(100%); transition: transform .18s ease; z-index: 21;
+    display: flex; flex-direction: column;
+  }
+  .slideover.open { transform: translateX(0); }
+  .slideover-head { display: flex; align-items: flex-start; justify-content: space-between; padding: var(--space-4); border-bottom: 1px solid var(--border); gap: var(--space-2); }
+  .slideover-head h2 { margin: 0 0 4px; font-size: 15px; }
+  .slideover-head .sub { color: var(--muted); font-size: 12px; }
+  .slideover-close { flex-shrink: 0; }
+  .slideover-body { padding: var(--space-4); overflow-y: auto; flex: 1; }
+
+  .meta-list { list-style: none; margin: 0 0 var(--space-4); padding: 0; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+  .meta-list .k { color: var(--faint); display: inline-block; min-width: 108px; }
+  .meta-list .v { color: var(--text); }
+
+  .diff-table { width: 100%; border-collapse: collapse; }
+  .diff-table th, .diff-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: top; }
+  .diff-table th { color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .04em; background: var(--surface-alt); }
+  .diff-table tbody tr:last-child td { border-bottom: none; }
+  .diff-field { font-weight: 600; }
+  .diff-old { color: var(--danger); background: var(--danger-bg); border-radius: 4px; padding: 2px 6px; text-decoration: line-through; word-break: break-word; }
+  .diff-new { color: var(--success); background: var(--success-bg); border-radius: 4px; padding: 2px 6px; word-break: break-word; }
+  .diff-unchanged { color: var(--muted); word-break: break-word; }
+  .diff-empty-val { color: var(--faint); font-style: italic; }
+
+  /* desktop / PC density mode */
+  body.pc-mode .data-table th, body.pc-mode .data-table td { padding: 6px 10px; }
+  body.pc-mode .filters input, body.pc-mode .filters select { padding: 6px 8px; }
+  body.pc-mode .row-btn { height: 26px; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true">
+  <defs>
+    <g id="ic-eye"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></g>
+    <g id="ic-close"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></g>
+    <g id="ic-gear"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></g>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="brand"><span class="brand-mark"></span>Universal ERP</span>
+    <span class="crumb">/ <span data-i18n="administration">Administration</span> / <span data-i18n="audit_logs">Audit Logs</span></span>
+  </div>
+  <div class="topbar-right">
+    <select class="topbar-select lang-select" aria-label="Language" title="Language">
+      <option value="en">English</option>
+      <option value="si">සිංහල</option>
+      <option value="ta">தமிழ்</option>
+    </select>
+    <div class="mode-toggle">
+      <button type="button" class="mode-btn touch-btn active" data-i18n="touch">Touch</button>
+      <button type="button" class="mode-btn pc-btn" data-i18n="desktop">Desktop</button>
+    </div>
+    <div class="swatches" aria-label="Brand accent color">
+      <button class="swatch active" style="--sw:#2f6fed" data-accent="#2f6fed" data-ink="#ffffff" aria-label="Blue accent" type="button"></button>
+      <button class="swatch" style="--sw:#6d5ce7" data-accent="#6d5ce7" data-ink="#ffffff" aria-label="Indigo accent" type="button"></button>
+      <button class="swatch" style="--sw:#16a34a" data-accent="#16a34a" data-ink="#ffffff" aria-label="Green accent" type="button"></button>
+      <button class="swatch" style="--sw:#d97706" data-accent="#d97706" data-ink="#ffffff" aria-label="Amber accent" type="button"></button>
+      <button class="swatch" style="--sw:#dc2626" data-accent="#dc2626" data-ink="#ffffff" aria-label="Red accent" type="button"></button>
+    </div>
+    <a class="icon-btn" href="settings.html" aria-label="Settings" title="Settings">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-gear"/></svg>
+    </a>
+    <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/>
+        <line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/>
+        <line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/>
+        <line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/>
+      </svg>
+    </button>
+    <div class="user-chip">RH</div>
+  </div>
+</header>
+
+<main class="page-main">
+  <div class="page-head">
+    <div class="page-head-text">
+      <h1 data-i18n="audit_logs">Audit Logs</h1>
+      <p data-i18n="audit_intro">Every recorded action across identity, security, and business data - who did what, when, and what changed.</p>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="search" id="searchInput" placeholder="Search by actor, entity, or action..." aria-label="Search audit logs" data-i18n-placeholder="search_audit_logs" />
+    <select id="entityFilter" aria-label="Filter by entity type">
+      <option value="" data-i18n="all_entities">All entities</option>
+    </select>
+    <select id="actionFilter" aria-label="Filter by action">
+      <option value="" data-i18n="all_actions">All actions</option>
+    </select>
+    <select id="actorFilter" aria-label="Filter by actor">
+      <option value="" data-i18n="all_actors">All actors</option>
+    </select>
+    <div class="date-range">
+      <span data-i18n="date_from">From</span>
+      <input type="date" id="dateFrom" aria-label="From date" />
+      <span data-i18n="date_to">To</span>
+      <input type="date" id="dateTo" aria-label="To date" />
+    </div>
+    <span class="filter-count" id="filterCount">Showing 0 of 0 entries</span>
+  </div>
+
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th data-i18n="timestamp_col">Timestamp</th>
+          <th data-i18n="actor_col">Actor</th>
+          <th data-i18n="entity_col">Entity</th>
+          <th data-i18n="action_col">Action</th>
+          <th data-i18n="organization_col">Organization</th>
+          <th data-i18n="diff_col">Details</th>
+        </tr>
+      </thead>
+      <tbody id="logRows"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" data-i18n="no_audit_results" style="display:none;">No audit log entries match your filters.</div>
+  </div>
+</main>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="slideover" id="slideover" aria-label="Audit entry details" aria-hidden="true">
+  <div class="slideover-head">
+    <div>
+      <h2 data-i18n="diff_title">Change details</h2>
+      <div class="sub" id="slideoverSub"></div>
+    </div>
+    <button class="icon-btn slideover-close" id="slideoverClose" type="button" aria-label="Close" data-i18n-title="close">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-close"/></svg>
+    </button>
+  </div>
+  <div class="slideover-body" id="slideoverBody"></div>
+</aside>
+
+<script src="shared.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+  });
+  document.querySelectorAll('.swatch').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      root.style.setProperty('--accent', btn.dataset.accent);
+      root.style.setProperty('--accent-hover', btn.dataset.accent);
+      root.style.setProperty('--accent-ink', btn.dataset.ink);
+      document.querySelectorAll('.swatch').forEach(function (s) { s.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  // Mock AuditLog rows - shape mirrors Back_End AuditLog.java / AuditEvent.java.
+  var entries = [
+    { ts: '2026-08-29T09:14:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Session', entityId: 'a1c2-8e91', action: 'auth.login', org: 'Head Office', before: null, after: { clientType: 'web' } },
+    { ts: '2026-08-29T08:55:00Z', actor: null, actorSub: 'n.fernando@acme.lk', entityType: 'Session', entityId: '—', action: 'auth.login_failed', org: 'Head Office', before: null, after: { reason: 'invalid_password', email: 'n.fernando@acme.lk' } },
+    { ts: '2026-08-28T16:32:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Role', entityId: '7f3a-11d4', action: 'role.created', org: 'Head Office', before: null, after: { name: 'Warehouse Manager', description: 'Inventory and receiving', permissions: 'inventory.view, inventory.edit, stock.transfer' } },
+    { ts: '2026-08-28T16:40:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Role', entityId: '2b6e-4490', action: 'role.updated', org: 'Head Office', before: { name: 'Cashier', description: 'POS checkout', permissions: 'pos.view, pos.sell' }, after: { name: 'Cashier', description: 'POS checkout and returns', permissions: 'pos.view, pos.sell, pos.return' } },
+    { ts: '2026-08-28T17:02:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Role', entityId: '9d10-2c77', action: 'role.member_assigned', org: 'Colombo Branch', before: null, after: { userId: 'S. Jayasuriya' } },
+    { ts: '2026-08-27T11:20:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Role', entityId: '5a8c-3391', action: 'role.member_unassigned', org: 'Colombo Branch', before: { userId: 'D. Wickramasinghe' }, after: null },
+    { ts: '2026-08-27T11:25:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Role', entityId: 'e004-77b1', action: 'role.deleted', org: 'Head Office', before: { name: 'Temp Auditor', description: 'Short-term audit access', permissions: 'audit.view' }, after: null },
+    { ts: '2026-08-27T09:03:00Z', actor: 'A. Perera', actorSub: 'a.perera@acme.lk', entityType: 'Session', entityId: 'c390-6612', action: 'auth.login', org: 'Colombo Branch', before: null, after: { clientType: 'mobile' } },
+    { ts: '2026-08-26T14:47:00Z', actor: 'N. Fernando', actorSub: 'n.fernando@acme.lk', entityType: 'Session', entityId: 'f001-9a2e', action: 'auth.login', org: 'Head Office', before: null, after: { clientType: 'desktop' } },
+    { ts: '2026-08-26T10:12:00Z', actor: 'A. Perera', actorSub: 'a.perera@acme.lk', entityType: 'Product', entityId: 'ELC-00214', action: 'product.created', org: 'Head Office', before: null, after: { name: 'Wireless Mouse M185', sku: 'ELC-00214', category: 'Electronics', sellingPrice: '5,250.00' } },
+    { ts: '2026-08-25T15:58:00Z', actor: 'N. Fernando', actorSub: 'n.fernando@acme.lk', entityType: 'InventoryStock', entityId: 'ELC-00214-BLK', action: 'inventory.adjusted', org: 'Head Office', before: { quantityOnHand: '150' }, after: { quantityOnHand: '142', reason: 'Stock count correction' } },
+    { ts: '2026-08-25T09:40:00Z', actor: null, actorSub: 's.jayasuriya@acme.lk', entityType: 'Session', entityId: '—', action: 'auth.login_failed', org: 'Colombo Branch', before: null, after: { reason: 'invalid_password', email: 's.jayasuriya@acme.lk' } },
+    { ts: '2026-08-24T13:15:00Z', actor: 'R. Haritha', actorSub: 'r.haritha@acme.lk', entityType: 'Role', entityId: '2b6e-4490', action: 'role.member_assigned', org: 'Head Office', before: null, after: { userId: 'A. Perera' } }
+  ];
+
+  var actionBadge = {
+    'auth.login': 'badge-success', 'auth.login_failed': 'badge-danger',
+    'role.created': 'badge-success', 'role.updated': 'badge-warning',
+    'role.member_assigned': 'badge-success', 'role.member_unassigned': 'badge-danger', 'role.deleted': 'badge-danger',
+    'product.created': 'badge-success', 'inventory.adjusted': 'badge-warning'
+  };
+
+  function formatTs(iso) {
+    var d = new Date(iso);
+    var date = d.toISOString().slice(0, 10);
+    var time = d.toISOString().slice(11, 16);
+    return { date: date, time: time };
+  }
+
+  function fillSelect(select, values, allKey) {
+    values.forEach(function (v) {
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      select.appendChild(opt);
+    });
+  }
+
+  function uniqueSorted(values) {
+    return values.filter(function (v, i) { return v && values.indexOf(v) === i; }).sort();
+  }
+
+  fillSelect(document.getElementById('entityFilter'), uniqueSorted(entries.map(function (e) { return e.entityType; })));
+  fillSelect(document.getElementById('actionFilter'), uniqueSorted(entries.map(function (e) { return e.action; })));
+  fillSelect(document.getElementById('actorFilter'), uniqueSorted(entries.map(function (e) { return e.actor; })));
+
+  var rowsEl = document.getElementById('logRows');
+  entries.forEach(function (entry, index) {
+    var ts = formatTs(entry.ts);
+    var tr = document.createElement('tr');
+    tr.dataset.entityType = entry.entityType;
+    tr.dataset.action = entry.action;
+    tr.dataset.actor = entry.actor || entry.actorSub;
+    tr.dataset.date = ts.date;
+    tr.dataset.search = [entry.actor, entry.actorSub, entry.entityType, entry.entityId, entry.action, entry.org].join(' ').toLowerCase();
+
+    var badgeClass = actionBadge[entry.action] || 'badge-muted';
+    tr.innerHTML =
+      '<td class="ts-cell"><div>' + ts.date + '</div><div class="date">' + ts.time + ' UTC</div></td>' +
+      '<td class="actor-cell"><div class="name">' + (entry.actor || ERP.t('unknown_actor')) + '</div><div class="sub">' + entry.actorSub + '</div></td>' +
+      '<td class="entity-cell"><div class="type">' + entry.entityType + '</div><div class="id mono">' + entry.entityId + '</div></td>' +
+      '<td><span class="badge ' + badgeClass + '">' + entry.action + '</span></td>' +
+      '<td>' + entry.org + '</td>' +
+      '<td><button class="row-btn" type="button" data-index="' + index + '"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-eye"/></svg><span data-i18n="view_diff">View details</span></button></td>';
+
+    rowsEl.appendChild(tr);
+  });
+
+  function applyFilters() {
+    var search = document.getElementById('searchInput').value.trim().toLowerCase();
+    var entityType = document.getElementById('entityFilter').value;
+    var action = document.getElementById('actionFilter').value;
+    var actor = document.getElementById('actorFilter').value;
+    var from = document.getElementById('dateFrom').value;
+    var to = document.getElementById('dateTo').value;
+
+    var visible = 0;
+    rowsEl.querySelectorAll('tr').forEach(function (tr) {
+      var match = true;
+      if (search && tr.dataset.search.indexOf(search) === -1) match = false;
+      if (entityType && tr.dataset.entityType !== entityType) match = false;
+      if (action && tr.dataset.action !== action) match = false;
+      if (actor && tr.dataset.actor !== actor) match = false;
+      if (from && tr.dataset.date < from) match = false;
+      if (to && tr.dataset.date > to) match = false;
+      tr.classList.toggle('hidden-row', !match);
+      if (match) visible++;
+    });
+
+    document.getElementById('filterCount').textContent = 'Showing ' + visible + ' of ' + entries.length + ' entries';
+    document.getElementById('emptyState').style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  ['searchInput', 'entityFilter', 'actionFilter', 'actorFilter', 'dateFrom', 'dateTo'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', applyFilters);
+  });
+  applyFilters();
+
+  // Diff rendering - flattens one level of before/after snapshot keys, since
+  // AuditEvent snapshots are plain objects, not deeply nested documents.
+  function computeDiff(before, after) {
+    var keys = uniqueSorted(Object.keys(before || {}).concat(Object.keys(after || {})));
+    return keys.map(function (key) {
+      var oldVal = before ? before[key] : undefined;
+      var newVal = after ? after[key] : undefined;
+      var status = 'unchanged';
+      if (oldVal === undefined) status = 'added';
+      else if (newVal === undefined) status = 'removed';
+      else if (String(oldVal) !== String(newVal)) status = 'changed';
+      return { key: key, oldVal: oldVal, newVal: newVal, status: status };
+    });
+  }
+
+  function renderVal(val) {
+    if (val === undefined || val === null || val === '') return '<span class="diff-empty-val">—</span>';
+    return String(val);
+  }
+
+  function openSlideover(entry) {
+    var ts = formatTs(entry.ts);
+    document.getElementById('slideoverSub').textContent = entry.action + ' · ' + entry.entityType + ' ' + entry.entityId;
+
+    var meta = document.createElement('ul');
+    meta.className = 'meta-list';
+    meta.innerHTML =
+      '<li><span class="k">' + ERP.t('timestamp_col') + '</span><span class="v">' + ts.date + ' ' + ts.time + ' UTC</span></li>' +
+      '<li><span class="k">' + ERP.t('actor_col') + '</span><span class="v">' + (entry.actor || ERP.t('unknown_actor')) + ' (' + entry.actorSub + ')</span></li>' +
+      '<li><span class="k">' + ERP.t('entity_col') + '</span><span class="v">' + entry.entityType + ' - ' + entry.entityId + '</span></li>' +
+      '<li><span class="k">' + ERP.t('action_col') + '</span><span class="v mono">' + entry.action + '</span></li>' +
+      '<li><span class="k">' + ERP.t('organization_col') + '</span><span class="v">' + entry.org + '</span></li>';
+
+    var diff = computeDiff(entry.before, entry.after);
+    var table = document.createElement('table');
+    table.className = 'diff-table';
+    var rows = diff.map(function (d) {
+      var oldCell = d.status === 'unchanged' ? '<span class="diff-unchanged">' + renderVal(d.oldVal) + '</span>'
+        : d.status === 'added' ? '<span class="diff-empty-val">—</span>'
+        : '<span class="diff-old">' + renderVal(d.oldVal) + '</span>';
+      var newCell = d.status === 'unchanged' ? '<span class="diff-unchanged">' + renderVal(d.newVal) + '</span>'
+        : d.status === 'removed' ? '<span class="diff-empty-val">—</span>'
+        : '<span class="diff-new">' + renderVal(d.newVal) + '</span>';
+      return '<tr><td class="diff-field">' + d.key + '</td><td>' + oldCell + '</td><td>' + newCell + '</td></tr>';
+    }).join('');
+    table.innerHTML =
+      '<thead><tr><th>Field</th><th>' + ERP.t('before_label') + '</th><th>' + ERP.t('after_label') + '</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="3" class="diff-empty-val">No fields recorded for this action.</td></tr>') + '</tbody>';
+
+    var body = document.getElementById('slideoverBody');
+    body.innerHTML = '';
+    body.appendChild(meta);
+    body.appendChild(table);
+
+    document.getElementById('slideover').classList.add('open');
+    document.getElementById('slideover').setAttribute('aria-hidden', 'false');
+    document.getElementById('backdrop').classList.add('open');
+  }
+
+  function closeSlideover() {
+    document.getElementById('slideover').classList.remove('open');
+    document.getElementById('slideover').setAttribute('aria-hidden', 'true');
+    document.getElementById('backdrop').classList.remove('open');
+  }
+
+  rowsEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('.row-btn');
+    if (!btn) return;
+    openSlideover(entries[Number(btn.dataset.index)]);
+  });
+  document.getElementById('slideoverClose').addEventListener('click', closeSlideover);
+  document.getElementById('backdrop').addEventListener('click', closeSlideover);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSlideover(); });
+
+  ERP.wireDensityToggle(document.querySelector('.touch-btn'), document.querySelector('.pc-btn'));
+  ERP.wireLangSelect(document.querySelector('.lang-select'));
+  ERP.initPage();
+})();
+</script>
+</body>
+</html>

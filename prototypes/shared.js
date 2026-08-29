@@ -77,7 +77,14 @@ window.ERP = (function () {
       role_info: 'Role info', role_name_label: 'Role name', scope_label: 'Scope',
       scope_hint: 'Branch and store level roles are planned for a later release.',
       members: 'Members', members_empty: 'No users have this role yet.', add_member: 'Add member',
-      administration: 'Administration'
+      administration: 'Administration',
+      audit_intro: 'Every recorded action across identity, security, and business data - who did what, when, and what changed.',
+      search_audit_logs: 'Search by actor, entity, or action...', entity_col: 'Entity', actor_col: 'Actor',
+      action_col: 'Action', timestamp_col: 'Timestamp', organization_col: 'Organization', diff_col: 'Details',
+      all_entities: 'All entities', all_actions: 'All actions', all_actors: 'All actors',
+      date_from: 'From', date_to: 'To', view_diff: 'View details', diff_title: 'Change details',
+      before_label: 'Before', after_label: 'After', close: 'Close',
+      no_audit_results: 'No audit log entries match your filters.', unknown_actor: 'Unknown'
     },
     si: {
       language: 'භාෂාව', touch: 'ස්පර්ශ', desktop: 'ඩෙස්ක්ටොප්', settings: 'සැකසුම්',
@@ -125,7 +132,14 @@ window.ERP = (function () {
       role_info: 'භූමිකා තොරතුරු', role_name_label: 'භූමිකාවේ නම', scope_label: 'විෂය පථය',
       scope_hint: 'ශාඛා සහ වෙළඳසැල් මට්ටමේ භූමිකා පසුකාලීන නිකුතුවක් සඳහා සැලසුම් කර ඇත.',
       members: 'සාමාජිකයන්', members_empty: 'තවම කිසිදු පරිශීලකයෙකුට මෙම භූමිකාව නොමැත.', add_member: 'සාමාජිකයෙකු එක් කරන්න',
-      administration: 'පරිපාලනය'
+      administration: 'පරිපාලනය',
+      audit_intro: 'අනන්‍යතාව, ආරක්ෂාව සහ ව්‍යාපාරික දත්ත පුරා සටහන් වූ සෑම ක්‍රියාවක්ම - කවුරුන් කුමක් කළේද, කවදාද, සහ කුමක් වෙනස් වූයේද.',
+      search_audit_logs: 'පරිශීලකයා, අයිතමය, හෝ ක්‍රියාව අනුව සොයන්න...', entity_col: 'අයිතමය', actor_col: 'පරිශීලකයා',
+      action_col: 'ක්‍රියාව', timestamp_col: 'වේලාව', organization_col: 'සංවිධානය', diff_col: 'විස්තර',
+      all_entities: 'සියලු අයිතම', all_actions: 'සියලු ක්‍රියා', all_actors: 'සියලු පරිශීලකයන්',
+      date_from: 'සිට', date_to: 'දක්වා', view_diff: 'විස්තර බලන්න', diff_title: 'වෙනස්කම් විස්තර',
+      before_label: 'පෙර', after_label: 'පසු', close: 'වසන්න',
+      no_audit_results: 'ඔබගේ පෙරහන් වලට ගැලපෙන විගණන සටහන් නොමැත.', unknown_actor: 'නොදන්නා'
     },
     ta: {
       language: 'மொழி', touch: 'தொடு', desktop: 'டெஸ்க்டாப்', settings: 'அமைப்புகள்',
@@ -173,7 +187,14 @@ window.ERP = (function () {
       role_info: 'பங்கு தகவல்', role_name_label: 'பங்கின் பெயர்', scope_label: 'நோக்கு',
       scope_hint: 'கிளை மற்றும் கடை நிலை பங்குகள் பிற்கால வெளியீட்டிற்குத் திட்டமிடப்பட்டுள்ளன.',
       members: 'உறுப்பினர்கள்', members_empty: 'இந்தப் பங்கு இன்னும் எந்தப் பயனருக்கும் இல்லை.', add_member: 'உறுப்பினரைச் சேர்',
-      administration: 'நிர்வாகம்'
+      administration: 'நிர்வாகம்',
+      audit_intro: 'அடையாளம், பாதுகாப்பு மற்றும் வணிக தரவு முழுவதும் பதிவு செய்யப்பட்ட ஒவ்வொரு செயலும் - யார் என்ன செய்தார்கள், எப்போது, என்ன மாறியது.',
+      search_audit_logs: 'பயனர், பொருள், அல்லது செயல் மூலம் தேடு...', entity_col: 'பொருள்', actor_col: 'பயனர்',
+      action_col: 'செயல்', timestamp_col: 'நேரம்', organization_col: 'அமைப்பு', diff_col: 'விவரங்கள்',
+      all_entities: 'அனைத்து பொருட்களும்', all_actions: 'அனைத்து செயல்களும்', all_actors: 'அனைத்து பயனர்களும்',
+      date_from: 'இருந்து', date_to: 'வரை', view_diff: 'விவரங்களைப் பார்', diff_title: 'மாற்ற விவரங்கள்',
+      before_label: 'முன்பு', after_label: 'பின்பு', close: 'மூடு',
+      no_audit_results: 'உங்கள் வடிகட்டிகளுக்குப் பொருந்தும் தணிக்கை பதிவுகள் இல்லை.', unknown_actor: 'தெரியாதது'
     }
   };
 
