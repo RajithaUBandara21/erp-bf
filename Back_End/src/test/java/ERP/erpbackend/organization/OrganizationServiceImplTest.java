@@ -5,9 +5,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -132,6 +136,46 @@ class OrganizationServiceImplTest {
 		when(tenantRepository.findByCode("missing")).thenReturn(Optional.empty());
 
 		assertThat(organizationService.findTenantIdByCode("missing")).isEmpty();
+	}
+
+	private Organization organizationWith(UUID id, String name) {
+		Organization organization = new Organization();
+		organization.setName(name);
+		organization.setCode(name);
+		ReflectionTestUtils.setField(organization, "id", id);
+		return organization;
+	}
+
+	@Test
+	void findNamesByIdsReturnsNamesKeyedByIdForExistingOrganizations() {
+		UUID id1 = UUID.randomUUID();
+		UUID id2 = UUID.randomUUID();
+		when(organizationRepository.findAllById(Set.of(id1, id2)))
+				.thenReturn(List.of(organizationWith(id1, "Head Office"), organizationWith(id2, "Colombo Branch")));
+
+		Map<UUID, String> names = organizationService.findNamesByIds(Set.of(id1, id2));
+
+		assertThat(names).containsExactlyInAnyOrderEntriesOf(Map.of(id1, "Head Office", id2, "Colombo Branch"));
+	}
+
+	@Test
+	void findNamesByIdsOmitsIdsThatDoNotResolveToAnOrganization() {
+		UUID existingId = UUID.randomUUID();
+		UUID deletedId = UUID.randomUUID();
+		when(organizationRepository.findAllById(Set.of(existingId, deletedId)))
+				.thenReturn(List.of(organizationWith(existingId, "Head Office")));
+
+		Map<UUID, String> names = organizationService.findNamesByIds(Set.of(existingId, deletedId));
+
+		assertThat(names).containsOnlyKeys(existingId);
+	}
+
+	@Test
+	void findNamesByIdsShortCircuitsOnEmptyInputWithoutQuerying() {
+		Map<UUID, String> names = organizationService.findNamesByIds(Set.of());
+
+		assertThat(names).isEmpty();
+		verifyNoInteractions(organizationRepository);
 	}
 
 }

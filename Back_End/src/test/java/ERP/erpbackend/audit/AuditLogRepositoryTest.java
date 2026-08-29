@@ -9,6 +9,9 @@ import ERP.erpbackend.organization.Organization;
 import ERP.erpbackend.organization.OrganizationRepository;
 import ERP.erpbackend.organization.Tenant;
 import ERP.erpbackend.organization.TenantRepository;
+import jakarta.persistence.EntityManager;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,11 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase.Replace;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @DataJpaTest
 @Import(TestcontainersConfiguration.class)
@@ -33,6 +41,12 @@ class AuditLogRepositoryTest {
 
 	@Autowired
 	private AuditLogRepository auditLogRepository;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	private EntityManager entityManager;
 
 	private Tenant newTenant(String code) {
 		Tenant tenant = new Tenant();
@@ -109,6 +123,95 @@ class AuditLogRepositoryTest {
 		assertThat(found.getBeforeValue()).isNull();
 		assertThat(found.getAfterValue()).isNull();
 		assertThat(found.getAction()).isEqualTo("auth.login_failed");
+	}
+
+	private AuditLog newAuditLog(UUID tenantId, UUID userId, String entityType, String action, Instant createdAt) {
+		AuditLog auditLog = new AuditLog();
+		auditLog.setTenantId(tenantId);
+		auditLog.setUserId(userId);
+		auditLog.setEntityType(entityType);
+		auditLog.setAction(action);
+		AuditLog saved = auditLogRepository.saveAndFlush(auditLog);
+		// created_at is @CreatedDate/updatable=false, so Hibernate won't write it
+		// on an update - backdate it with a raw statement instead, then evict the
+		// persistence context so later queries in the test see the new value.
+		jdbcTemplate.update("UPDATE audit_logs SET created_at = ? WHERE id = ?", Timestamp.from(createdAt),
+				saved.getId());
+		entityManager.clear();
+		return saved;
+	}
+
+	@Test
+	void searchFiltersByEntityTypeActionActorAndDateRangeWithinTenant() {
+		Tenant tenant = newTenant("TEN-AUD-3");
+		Organization organization = newOrganization(tenant, "ORG-AUD-3");
+		User actor = newUser(tenant, organization, "actor3@acme.test");
+		Tenant otherTenant = newTenant("TEN-AUD-4");
+
+		Instant day1 = Instant.parse("2026-08-01T00:00:00Z");
+		Instant day2 = Instant.parse("2026-08-02T00:00:00Z");
+		Instant day3 = Instant.parse("2026-08-03T00:00:00Z");
+
+		AuditLog roleCreated = newAuditLog(tenant.getId(), actor.getId(), "Role", "role.created", day1);
+		AuditLog roleUpdated = newAuditLog(tenant.getId(), actor.getId(), "Role", "role.updated", day2);
+		AuditLog login = newAuditLog(tenant.getId(), actor.getId(), "Session", "auth.login", day3);
+		newAuditLog(otherTenant.getId(), null, "Role", "role.created", day1);
+
+		Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+		Page<AuditLog> byEntityType = auditLogRepository.search(tenant.getId(), "Role", null, null, null, null,
+				pageable);
+		assertThat(byEntityType.getContent()).extracting(AuditLog::getId)
+				.containsExactly(roleUpdated.getId(), roleCreated.getId());
+
+		Page<AuditLog> byAction = auditLogRepository.search(tenant.getId(), null, "auth.login", null, null, null,
+				pageable);
+		assertThat(byAction.getContent()).extracting(AuditLog::getId).containsExactly(login.getId());
+
+		Page<AuditLog> byActor = auditLogRepository.search(tenant.getId(), null, null, actor.getId(), null, null,
+				pageable);
+		assertThat(byActor.getContent()).hasSize(3);
+
+		Page<AuditLog> byDateRange = auditLogRepository.search(tenant.getId(), null, null, null, day2, day3,
+				pageable);
+		assertThat(byDateRange.getContent()).extracting(AuditLog::getId)
+				.containsExactly(login.getId(), roleUpdated.getId());
+
+		Page<AuditLog> combined = auditLogRepository.search(tenant.getId(), "Role", "role.updated", actor.getId(),
+				day1, day3, pageable);
+		assertThat(combined.getContent()).extracting(AuditLog::getId).containsExactly(roleUpdated.getId());
+
+		Page<AuditLog> noMatch = auditLogRepository.search(tenant.getId(), "Product", null, null, null, null,
+				pageable);
+		assertThat(noMatch.getContent()).isEmpty();
+
+		Page<AuditLog> allForTenant = auditLogRepository.search(tenant.getId(), null, null, null, null, null,
+				pageable);
+		assertThat(allForTenant.getContent()).extracting(AuditLog::getId)
+				.containsExactly(login.getId(), roleUpdated.getId(), roleCreated.getId());
+	}
+
+	@Test
+	void searchPaginatesInDescendingCreatedAtOrder() {
+		Tenant tenant = newTenant("TEN-AUD-5");
+		Instant day1 = Instant.parse("2026-08-01T00:00:00Z");
+		Instant day2 = Instant.parse("2026-08-02T00:00:00Z");
+		Instant day3 = Instant.parse("2026-08-03T00:00:00Z");
+
+		AuditLog first = newAuditLog(tenant.getId(), null, "Role", "role.created", day1);
+		AuditLog second = newAuditLog(tenant.getId(), null, "Role", "role.created", day2);
+		AuditLog third = newAuditLog(tenant.getId(), null, "Role", "role.created", day3);
+
+		Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+		Page<AuditLog> pageOne = auditLogRepository.search(tenant.getId(), null, null, null, null, null,
+				PageRequest.of(0, 2, sort));
+		assertThat(pageOne.getContent()).extracting(AuditLog::getId).containsExactly(third.getId(), second.getId());
+		assertThat(pageOne.getTotalElements()).isEqualTo(3);
+		assertThat(pageOne.getTotalPages()).isEqualTo(2);
+
+		Page<AuditLog> pageTwo = auditLogRepository.search(tenant.getId(), null, null, null, null, null,
+				PageRequest.of(1, 2, sort));
+		assertThat(pageTwo.getContent()).extracting(AuditLog::getId).containsExactly(first.getId());
 	}
 
 }

@@ -16,10 +16,13 @@ import org.springframework.stereotype.Component;
  * philosophy as {@link IpRateLimiter}: it degrades to "revoke blocks refresh
  * immediately, access lingers <= TTL", which is exactly the pre-fix behaviour.
  */
+// Public only so a @WebMvcTest in another module's package (e.g. AuditLogControllerTest) can
+// declare a @MockitoBean of this type to satisfy SecurityConfig's constructor when it imports
+// SecurityConfig for its own authorization slice test; methods stay package-private.
 @Slf4j
 @Component
 @RequiredArgsConstructor
-class RevokedSessionRegistry {
+public class RevokedSessionRegistry {
 
 	private static final String KEY_PREFIX = "revoked-session:";
 

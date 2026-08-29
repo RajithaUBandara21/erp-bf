@@ -1,9 +1,12 @@
 package ERP.erpbackend.organization;
 
+import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +44,15 @@ public class OrganizationServiceImpl implements OrganizationService {
 	@Override
 	public Optional<UUID> findTenantIdByCode(String code) {
 		return tenantRepository.findByCode(code).map(Tenant::getId);
+	}
+
+	@Override
+	public Map<UUID, String> findNamesByIds(Collection<UUID> organizationIds) {
+		if (organizationIds.isEmpty()) {
+			return Map.of();
+		}
+		return organizationRepository.findAllById(organizationIds).stream()
+				.collect(Collectors.toMap(Organization::getId, Organization::getName));
 	}
 
 	private String uniqueCodeFor(String organizationName) {
