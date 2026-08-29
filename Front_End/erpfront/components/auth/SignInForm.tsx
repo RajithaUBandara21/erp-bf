@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { signIn, type SignInFormState } from "@/actions/auth";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 const initialState: SignInFormState = {};
 
@@ -9,53 +10,63 @@ export function SignInForm() {
 	const [state, formAction, pending] = useActionState(signIn, initialState);
 
 	return (
-		<form action={formAction} noValidate>
-			{state.error && (
-				<div className="mb-4 flex items-start gap-2 rounded-[5px] bg-danger-bg px-3 py-2.5 text-xs text-danger">
-					<span>{state.error}</span>
-				</div>
-			)}
+		<>
+			<form action={formAction} noValidate>
+				{state.error && (
+					<div className="mb-4 flex items-start gap-2 rounded-[5px] bg-danger-bg px-3 py-2.5 text-xs text-danger">
+						<span>{state.error}</span>
+					</div>
+				)}
 
-			<Field
-				id="organizationCode"
-				name="organizationCode"
-				label="Organization code"
-				type="text"
-				autoComplete="off"
-				defaultValue={state.values?.organizationCode}
-				error={state.fieldErrors?.organizationCode}
-			/>
-			<Field
-				id="email"
-				name="email"
-				label="Email"
-				type="email"
-				autoComplete="email"
-				defaultValue={state.values?.email}
-				error={state.fieldErrors?.email}
-			/>
-			<Field
-				id="password"
-				name="password"
-				label="Password"
-				type="password"
-				autoComplete="current-password"
-				error={state.fieldErrors?.password}
-			/>
+				<Field
+					id="organizationCode"
+					name="organizationCode"
+					label="Organization code"
+					type="text"
+					autoComplete="off"
+					defaultValue={state.values?.organizationCode}
+					error={state.fieldErrors?.organizationCode}
+				/>
+				<Field
+					id="email"
+					name="email"
+					label="Email"
+					type="email"
+					autoComplete="email"
+					defaultValue={state.values?.email}
+					error={state.fieldErrors?.email}
+				/>
+				<Field
+					id="password"
+					name="password"
+					label="Password"
+					type="password"
+					autoComplete="current-password"
+					error={state.fieldErrors?.password}
+				/>
 
-			<label className="mb-6 flex items-center gap-1.5 text-xs text-muted">
-				<input type="checkbox" name="remember" defaultChecked className="h-3.75 w-3.75 accent-accent" />
-				<span>Remember me</span>
-			</label>
+				<label className="mb-6 flex items-center gap-1.5 text-xs text-muted">
+					<input type="checkbox" name="remember" defaultChecked className="h-3.75 w-3.75 accent-accent" />
+					<span>Remember me</span>
+				</label>
 
-			<button
-				type="submit"
-				disabled={pending}
-				className="min-h-11 w-full rounded-[5px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
-			>
-				{pending ? "Signing in..." : "Sign in"}
-			</button>
-		</form>
+				<button
+					type="submit"
+					disabled={pending}
+					className="min-h-11 w-full rounded-[5px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
+				>
+					{pending ? "Signing in..." : "Sign in"}
+				</button>
+			</form>
+
+			<div className="my-5 flex items-center gap-3 text-[11px] font-semibold tracking-wide text-muted uppercase">
+				<span className="h-px flex-1 bg-border" />
+				<span>or</span>
+				<span className="h-px flex-1 bg-border" />
+			</div>
+
+			<GoogleSignInButton />
+		</>
 	);
 }
 

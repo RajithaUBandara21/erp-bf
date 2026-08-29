@@ -2,13 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { authedFetch } from "@/lib/api";
+import { authedFetch, postJson } from "@/lib/api";
 import type { AuthorizationUrlResponse } from "@/types/oauth";
 
 const SETTINGS_PATH = "/settings";
 
 export interface OAuthActionState {
 	error?: string;
+}
+
+// Unauthenticated, unlike connectGoogle below - there's no session yet on the sign-in page.
+export async function signInWithGoogle(): Promise<OAuthActionState> {
+	const result = await postJson<AuthorizationUrlResponse>("/api/auth/oauth/google/login-url", {});
+
+	if (!result.success) {
+		return { error: result.error };
+	}
+
+	redirect(result.data.authorizationUrl);
 }
 
 export async function connectGoogle(): Promise<OAuthActionState> {
