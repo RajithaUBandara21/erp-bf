@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ERP.erpbackend.TestcontainersConfiguration;
+import ERP.erpbackend.audit.AuditLog;
+import ERP.erpbackend.audit.AuditLogRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,15 @@ class RoleServiceIntegrationTest {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private AuditLogRepository auditLogRepository;
+
+	private List<AuditLog> auditLogsFor(UUID entityId, String action) {
+		return auditLogRepository.findAll().stream()
+				.filter(entry -> entityId.equals(entry.getEntityId()) && action.equals(entry.getAction()))
+				.toList();
+	}
 
 	private AuthenticatedUser registerOwner(String email) {
 		TokenResponse response = registrationService.register(
@@ -137,16 +148,29 @@ class RoleServiceIntegrationTest {
 		assertThat(created.systemManaged()).isFalse();
 		assertThat(created.permissionCodes()).containsExactly("pos.view", "sales.view");
 
+		AuditLog createdLog = auditLogsFor(created.id(), "role.created").stream().findFirst().orElseThrow();
+		assertThat(createdLog.getEntityType()).isEqualTo("Role");
+		assertThat(createdLog.getBeforeValue()).isNull();
+		assertThat(createdLog.getAfterValue()).contains("Cashier").contains("pos.view");
+
 		RoleDetailResponse updated = roleService.updateRole(caller, created.id(),
 				new UpdateRoleRequest("Cashier Lead", null, List.of("pos.view", "sales.view", "product.view")));
 		assertThat(updated.name()).isEqualTo("Cashier Lead");
 		assertThat(updated.permissionCodes()).containsExactly("pos.view", "product.view", "sales.view");
 		assertThat(rolePermissionRepository.findByRoleId(created.id())).hasSize(3);
 
+		AuditLog updatedLog = auditLogsFor(created.id(), "role.updated").stream().findFirst().orElseThrow();
+		assertThat(updatedLog.getBeforeValue()).contains("Cashier").doesNotContain("Cashier Lead");
+		assertThat(updatedLog.getAfterValue()).contains("Cashier Lead").contains("product.view");
+
 		roleService.deleteRole(caller, created.id());
 		assertThat(roleService.listRoles(caller)).extracting(RoleSummaryResponse::name)
 				.doesNotContain("Cashier Lead");
 		assertThat(rolePermissionRepository.findByRoleId(created.id())).isEmpty();
+
+		AuditLog deletedLog = auditLogsFor(created.id(), "role.deleted").stream().findFirst().orElseThrow();
+		assertThat(deletedLog.getBeforeValue()).contains("Cashier Lead").contains("product.view");
+		assertThat(deletedLog.getAfterValue()).isNull();
 	}
 
 	@Test
@@ -247,9 +271,25 @@ class RoleServiceIntegrationTest {
 		roleService.assignMember(owner, viewerRoleId, teammate.getId());
 		assertThat(roleService.getRole(owner, viewerRoleId).members())
 				.extracting(RoleMemberResponse::userId).containsExactly(teammate.getId());
+		AuditLog assignedLog = auditLogsFor(viewerRoleId, "role.member_assigned").stream().findFirst().orElseThrow();
+		assertThat(assignedLog.getAfterValue()).contains(teammate.getId().toString());
 
 		roleService.unassignMember(owner, viewerRoleId, teammate.getId());
 		assertThat(roleService.getRole(owner, viewerRoleId).members()).isEmpty();
+		AuditLog unassignedLog = auditLogsFor(viewerRoleId, "role.member_unassigned").stream()
+				.findFirst().orElseThrow();
+		assertThat(unassignedLog.getBeforeValue()).contains(teammate.getId().toString());
+	}
+
+	@Test
+	void unassigningANonMemberProducesNoAuditRow() {
+		AuthenticatedUser owner = registerOwner("member-unassign-noop@acme.test");
+		User teammate = createTenantUser(owner, "teammate@member-unassign-noop.test");
+		UUID viewerRoleId = roleIdNamed(owner, "Viewer");
+
+		roleService.unassignMember(owner, viewerRoleId, teammate.getId());
+
+		assertThat(auditLogsFor(viewerRoleId, "role.member_unassigned")).isEmpty();
 	}
 
 	@Test
@@ -262,6 +302,7 @@ class RoleServiceIntegrationTest {
 		roleService.assignMember(owner, viewerRoleId, teammate.getId());
 
 		assertThat(userRoleRepository.findByRoleId(viewerRoleId)).hasSize(1);
+		assertThat(auditLogsFor(viewerRoleId, "role.member_assigned")).hasSize(1);
 	}
 
 	@Test

@@ -1,5 +1,7 @@
 package ERP.erpbackend.identity;
 
+import ERP.erpbackend.audit.AuditEvent;
+import ERP.erpbackend.audit.AuditService;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +29,7 @@ public class RoleService {
 	private final PermissionRepository permissionRepository;
 	private final UserRepository userRepository;
 	private final EffectivePermissionResolver effectivePermissionResolver;
+	private final AuditService auditService;
 
 	public List<RoleSummaryResponse> listRoles(AuthenticatedUser caller) {
 		List<Role> roles = roleRepository.findByTenantId(caller.tenantId());
@@ -91,6 +94,8 @@ public class RoleService {
 		role = roleRepository.save(role);
 
 		replaceGrants(role.getId(), permissions);
+		auditService.log(auditEvent(caller, role.getId(), "role.created",
+				null, new RoleSnapshot(name, role.getDescription(), codesOf(permissions))));
 		return getRole(caller, role.getId());
 	}
 
@@ -102,12 +107,15 @@ public class RoleService {
 		assertNameFree(caller.tenantId(), name, roleId);
 		List<Permission> permissions = resolveCodes(request.permissionCodes());
 		assertCallerCanGrant(caller, codesOf(permissions));
+		RoleSnapshot before = new RoleSnapshot(role.getName(), role.getDescription(), grantedCodes(roleId));
 
 		role.setName(name);
 		role.setDescription(trimToNull(request.description()));
 		roleRepository.save(role);
 
 		replaceGrants(roleId, permissions);
+		auditService.log(auditEvent(caller, roleId, "role.updated",
+				before, new RoleSnapshot(name, role.getDescription(), codesOf(permissions))));
 		return getRole(caller, roleId);
 	}
 
@@ -129,6 +137,8 @@ public class RoleService {
 		assignment.setUserId(userId);
 		assignment.setRoleId(roleId);
 		userRoleRepository.save(assignment);
+
+		auditService.log(auditEvent(caller, roleId, "role.member_assigned", null, Map.of("userId", userId)));
 	}
 
 	@Transactional
@@ -147,6 +157,8 @@ public class RoleService {
 			}
 		}
 		userRoleRepository.delete(assignment);
+
+		auditService.log(auditEvent(caller, roleId, "role.member_unassigned", Map.of("userId", userId), null));
 	}
 
 	@Transactional
@@ -157,8 +169,11 @@ public class RoleService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT,
 					"This role still has members. Reassign them before deleting it.");
 		}
+		RoleSnapshot before = new RoleSnapshot(role.getName(), role.getDescription(), grantedCodes(roleId));
 		rolePermissionRepository.deleteByRoleId(roleId);
 		roleRepository.delete(role);
+
+		auditService.log(auditEvent(caller, roleId, "role.deleted", before, null));
 	}
 
 	private Role requireRole(UUID tenantId, UUID roleId) {
@@ -255,6 +270,17 @@ public class RoleService {
 		}
 		String trimmed = value.trim();
 		return trimmed.isEmpty() ? null : trimmed;
+	}
+
+	/** {@code AuditEvent} stays free of identity types (see coding-standards.md module
+	 * boundaries), so the caller-to-actor mapping lives here instead of on the record. */
+	private static AuditEvent auditEvent(AuthenticatedUser caller, UUID entityId, String action,
+			Object beforeValue, Object afterValue) {
+		return new AuditEvent(caller.tenantId(), caller.organizationId(), caller.userId(), "Role", entityId,
+				action, beforeValue, afterValue);
+	}
+
+	private record RoleSnapshot(String name, String description, Collection<String> permissionCodes) {
 	}
 
 }

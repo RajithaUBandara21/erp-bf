@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import ERP.erpbackend.TestcontainersConfiguration;
+import ERP.erpbackend.audit.AuditLog;
+import ERP.erpbackend.audit.AuditLogRepository;
 import ERP.erpbackend.organization.Tenant;
 import ERP.erpbackend.organization.TenantRepository;
 import java.time.Instant;
@@ -47,6 +49,9 @@ class AuthenticationServiceTest {
 	@Autowired
 	private SessionRepository sessionRepository;
 
+	@Autowired
+	private AuditLogRepository auditLogRepository;
+
 	@MockitoSpyBean
 	private PasswordEncoder passwordEncoder;
 
@@ -85,6 +90,24 @@ class AuthenticationServiceTest {
 		assertThat(session.getClientType()).isEqualTo(ClientType.MOBILE);
 		assertThat(session.getUserId()).isEqualTo(response.userId());
 		assertThat(session.getTenantId()).isEqualTo(response.tenantId());
+	}
+
+	@Test
+	void loginProducesAnAuditLogRow() {
+		String email = "audit-login@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+
+		TokenResponse response = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+
+		AuthenticatedUser authenticatedUser = jwtService.parseAccessToken(response.accessToken()).orElseThrow();
+		AuditLog auditLog = auditLogRepository.findAll().stream()
+				.filter(entry -> authenticatedUser.sessionId().equals(entry.getEntityId()))
+				.findFirst().orElseThrow();
+		assertThat(auditLog.getAction()).isEqualTo("auth.login");
+		assertThat(auditLog.getEntityType()).isEqualTo("Session");
+		assertThat(auditLog.getTenantId()).isEqualTo(response.tenantId());
+		assertThat(auditLog.getUserId()).isEqualTo(response.userId());
 	}
 
 	@Test

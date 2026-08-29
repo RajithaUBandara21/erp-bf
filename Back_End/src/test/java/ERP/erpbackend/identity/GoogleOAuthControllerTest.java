@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ERP.erpbackend.TestcontainersConfiguration;
+import ERP.erpbackend.audit.AuditLogRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,6 +70,9 @@ class GoogleOAuthControllerTest {
 
 	@Autowired
 	private OAuthStateService oAuthStateService;
+
+	@Autowired
+	private AuditLogRepository auditLogRepository;
 
 	@MockitoBean
 	private GoogleTokenExchangeClient googleTokenExchangeClient;
@@ -226,6 +230,11 @@ class GoogleOAuthControllerTest {
 						.contentType("application/json")
 						.content("{ \"code\": \"" + exchangeCode + "\" }"))
 				.andExpect(status().isUnauthorized());
+
+		long loginAuditRows = auditLogRepository.findAll().stream()
+				.filter(entry -> user.getId().equals(entry.getUserId()) && "auth.login".equals(entry.getAction()))
+				.count();
+		assertThat(loginAuditRows).isEqualTo(2); // registration's own session, then this Google login
 	}
 
 	@Test
