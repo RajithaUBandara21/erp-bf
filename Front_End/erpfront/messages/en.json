@@ -1,0 +1,50 @@
+{
+	"shell": {
+		"brand": "Universal ERP"
+	},
+	"moduleLauncher": {
+		"heading": "Modules",
+		"signedInAs": "Signed in as {email}",
+		"searchPlaceholder": "Search modules...",
+		"searchLabel": "Search modules",
+		"gridView": "Grid view",
+		"listView": "List view",
+		"noMatches": "No modules match \"{query}\".",
+		"noAccess": "{label} - no access"
+	},
+	"moduleGroups": {
+		"operations": "Operations",
+		"business_partners": "Business partners",
+		"finance": "Finance",
+		"insight_system": "Insight & system"
+	},
+	"modules": {
+		"products": { "label": "Products", "description": "Catalog, pricing, variants" },
+		"inventory": { "label": "Inventory", "description": "Stock, warehouses, transfers" },
+		"purchasing": { "label": "Purchasing", "description": "Purchase orders, goods receiving" },
+		"sales": { "label": "Sales", "description": "Quotations, orders, invoices" },
+		"pos": { "label": "Point of Sale", "description": "Cashier checkout & receipts" },
+		"ecommerce": { "label": "E-Commerce", "description": "Storefront & online orders" },
+		"customers": { "label": "Customers", "description": "Profiles, addresses, history" },
+		"suppliers": { "label": "Suppliers", "description": "Contacts & purchase history" },
+		"shipping": { "label": "Shipping", "description": "Deliveries & tracking" },
+		"payments": { "label": "Payments", "description": "Methods, transactions, refunds" },
+		"accounting": { "label": "Accounting", "description": "Journals, receivables, payables" },
+		"promotions": { "label": "Promotions", "description": "Discounts & coupons" },
+		"reporting": { "label": "Reporting", "description": "Sales, stock & revenue KPIs" },
+		"notifications": { "label": "Notifications", "description": "Alerts & order updates" },
+		"audit-log": { "label": "Audit Logs", "description": "User actions & data changes" },
+		"settings": { "label": "Settings", "description": "Tenant & organization setup" }
+	},
+	"modulePlaceholder": {
+		"notBuilt": "{label} isn''t built yet"
+	},
+	"languageSwitcher": {
+		"label": "Language",
+		"locales": {
+			"en": "English",
+			"si": "Sinhala",
+			"ta": "Tamil"
+		}
+	}
+}

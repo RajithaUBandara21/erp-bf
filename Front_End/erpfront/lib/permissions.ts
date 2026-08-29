@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
+import { redirect } from "@/i18n/navigation";
 import { authedFetch } from "@/lib/api";
 import type { MePermissions } from "@/types/roles";
 
@@ -14,7 +15,7 @@ export async function fetchMyPermissions(): Promise<Set<string>> {
 
 	if (!result.success) {
 		if ("unauthorized" in result) {
-			redirect("/sign-in");
+			redirect({ href: "/sign-in", locale: await getLocale() });
 		}
 		return new Set();
 	}

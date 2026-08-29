@@ -2,8 +2,9 @@
 
 import type { FormEvent, ReactNode } from "react";
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import type { MatrixGroup } from "@/lib/permission-matrix";
 import type { RoleDetail } from "@/types/roles";
 import { createRole, updateRole, type RoleFormState } from "@/actions/roles";
@@ -24,6 +25,7 @@ export function RoleForm(props: RoleFormProps) {
 	const role = props.mode === "edit" ? props.role : null;
 
 	const router = useRouter();
+	const locale = useLocale();
 	const [name, setName] = useState(role?.name ?? "");
 	const [description, setDescription] = useState(role?.description ?? "");
 	const [codes, setCodes] = useState<string[]>(role?.permissionCodes ?? []);
@@ -47,7 +49,7 @@ export function RoleForm(props: RoleFormProps) {
 				permissionCodes: codes,
 			};
 			// createRole redirects on success and never resolves; updateRole returns {}.
-			const result = role ? await updateRole(role.id, body) : await createRole(body);
+			const result = role ? await updateRole(locale, role.id, body) : await createRole(locale, body);
 			setState(result);
 			setSaved(role != null && !result.error && !result.fieldErrors);
 			if (role && !result.error && !result.fieldErrors) {

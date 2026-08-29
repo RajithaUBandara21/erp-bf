@@ -1,0 +1,50 @@
+{
+	"shell": {
+		"brand": "Universal ERP"
+	},
+	"moduleLauncher": {
+		"heading": "தொகுதிகள்",
+		"signedInAs": "{email} ஆக உள்நுழைந்துள்ளீர்கள்",
+		"searchPlaceholder": "தொகுதிகளைத் தேடு...",
+		"searchLabel": "தொகுதிகளைத் தேடு",
+		"gridView": "கட்டக் காட்சி",
+		"listView": "பட்டியல் காட்சி",
+		"noMatches": "\"{query}\" உடன் பொருந்தும் தொகுதிகள் இல்லை.",
+		"noAccess": "{label} - அணுகல் இல்லை"
+	},
+	"moduleGroups": {
+		"operations": "செயல்பாடுகள்",
+		"business_partners": "வணிக பங்காளிகள்",
+		"finance": "நிதி",
+		"insight_system": "நுண்ணறிவு & அமைப்பு"
+	},
+	"modules": {
+		"products": { "label": "தயாரிப்புகள்", "description": "பட்டியல், விலை, மாறுபாடுகள்" },
+		"inventory": { "label": "சரக்கு", "description": "இருப்பு, கிடங்குகள், பரிமாற்றங்கள்" },
+		"purchasing": { "label": "கொள்முதல்", "description": "கொள்முதல் ஆணைகள், பொருட்கள் பெறுதல்" },
+		"sales": { "label": "விற்பனை", "description": "மேற்கோள்கள், ஆர்டர்கள், விலைப்பட்டியல்கள்" },
+		"pos": { "label": "விற்பனை முனையம்", "description": "காசாளர் செக்அவுட் & ரசீதுகள்" },
+		"ecommerce": { "label": "மின்வணிகம்", "description": "அங்காடி முகப்பு & ஆன்லைன் ஆர்டர்கள்" },
+		"customers": { "label": "வாடிக்கையாளர்கள்", "description": "சுயவிவரங்கள், முகவரிகள், வரலாறு" },
+		"suppliers": { "label": "சப்ளையர்கள்", "description": "தொடர்புகள் & கொள்முதல் வரலாறு" },
+		"shipping": { "label": "அனுப்புகை", "description": "விநியோகங்கள் & கண்காணிப்பு" },
+		"payments": { "label": "கொடுப்பனவுகள்", "description": "முறைகள், பரிவர்த்தனைகள், பணத்திரும்பப் பெறல்" },
+		"accounting": { "label": "கணக்கியல்", "description": "பதிவேடுகள், பெறத்தக்கவை, செலுத்தத்தக்கவை" },
+		"promotions": { "label": "விளம்பரங்கள்", "description": "தள்ளுபடிகள் & கூப்பன்கள்" },
+		"reporting": { "label": "அறிக்கையிடல்", "description": "விற்பனை, இருப்பு & வருவாய் KPI" },
+		"notifications": { "label": "அறிவிப்புகள்", "description": "எச்சரிக்கைகள் & ஆர்டர் புதுப்பிப்புகள்" },
+		"audit-log": { "label": "தணிக்கை பதிவுகள்", "description": "பயனர் செயல்கள் & தரவு மாற்றங்கள்" },
+		"settings": { "label": "அமைப்புகள்", "description": "நிறுவனர் & நிறுவன அமைப்பு" }
+	},
+	"modulePlaceholder": {
+		"notBuilt": "{label} இன்னும் உருவாக்கப்படவில்லை"
+	},
+	"languageSwitcher": {
+		"label": "மொழி",
+		"locales": {
+			"en": "ஆங்கிலம்",
+			"si": "சிங்களம்",
+			"ta": "தமிழ்"
+		}
+	}
+}

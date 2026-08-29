@@ -1,12 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "next-intl";
 import { signUp, type SignUpFormState } from "@/actions/auth";
 
 const initialState: SignUpFormState = {};
 
 export function SignUpForm() {
-	const [state, formAction, pending] = useActionState(signUp, initialState);
+	const locale = useLocale();
+	const [state, formAction, pending] = useActionState(signUp.bind(null, locale), initialState);
 
 	return (
 		<form action={formAction} noValidate>

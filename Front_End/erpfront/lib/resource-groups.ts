@@ -20,7 +20,7 @@ export const RESOURCE_GROUPS: readonly ResourceGroupDef[] = [
 	{ key: "administration", label: "Administration", resources: ["user", "role", "organization", "billing"] },
 ];
 
-/** Group label for a backend resource, or undefined if the resource isn't in any group. */
-export function resourceGroupLabel(resource: string): string | undefined {
-	return RESOURCE_GROUPS.find((group) => group.resources.includes(resource))?.label;
+/** Group key for a backend resource, or undefined if the resource isn't in any group. */
+export function resourceGroupKey(resource: string): string | undefined {
+	return RESOURCE_GROUPS.find((group) => group.resources.includes(resource))?.key;
 }

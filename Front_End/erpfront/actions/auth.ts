@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect } from "@/i18n/navigation";
 import { API_BASE_URL, postJson } from "@/lib/api";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
 import { fetchWithTimeout } from "@/lib/http";
@@ -21,7 +21,9 @@ export interface SignUpFormState {
 	};
 }
 
-export async function signUp(_prevState: SignUpFormState, formData: FormData): Promise<SignUpFormState> {
+// `locale` is a bound first argument (see components/auth/SignUpForm.tsx) - a Server Action has no
+// reliable way to read the current locale on its own, so the client passes what it already knows via useLocale().
+export async function signUp(locale: string, _prevState: SignUpFormState, formData: FormData): Promise<SignUpFormState> {
 	const organizationName = String(formData.get("organizationName") ?? "").trim();
 	const fullName = String(formData.get("fullName") ?? "").trim();
 	const email = String(formData.get("email") ?? "").trim();
@@ -61,7 +63,7 @@ export async function signUp(_prevState: SignUpFormState, formData: FormData): P
 
 	// Onboarding on a fresh org, no shared-machine signal - persist the session like today.
 	await setAuthCookies(result.data, true);
-	redirect("/");
+	redirect({ href: "/", locale });
 }
 
 export interface SignInFormState {
@@ -73,7 +75,8 @@ export interface SignInFormState {
 	};
 }
 
-export async function signIn(_prevState: SignInFormState, formData: FormData): Promise<SignInFormState> {
+// See signUp above for why `locale` is a bound first argument.
+export async function signIn(locale: string, _prevState: SignInFormState, formData: FormData): Promise<SignInFormState> {
 	const organizationCode = String(formData.get("organizationCode") ?? "").trim();
 	const email = String(formData.get("email") ?? "").trim();
 	const password = String(formData.get("password") ?? "");
@@ -102,10 +105,11 @@ export async function signIn(_prevState: SignInFormState, formData: FormData): P
 	}
 
 	await setAuthCookies(result.data, remember);
-	redirect("/");
+	redirect({ href: "/", locale });
 }
 
-export async function signOut(): Promise<void> {
+// See signUp above for why `locale` is a bound first argument.
+export async function signOut(locale: string): Promise<void> {
 	const refreshToken = await getRefreshToken();
 
 	if (refreshToken) {
@@ -124,5 +128,5 @@ export async function signOut(): Promise<void> {
 	}
 
 	await clearAuthCookies();
-	redirect("/sign-in");
+	redirect({ href: "/sign-in", locale });
 }

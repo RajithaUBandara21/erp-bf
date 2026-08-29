@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { MatrixGroup } from "@/lib/permission-matrix";
 import type { RoleDetail } from "@/types/roles";
 import { PermissionMatrix } from "@/components/roles/PermissionMatrix";

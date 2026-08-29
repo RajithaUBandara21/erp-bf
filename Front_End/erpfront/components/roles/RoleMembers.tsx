@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useLocale } from "next-intl";
 import { assignMember, unassignMember, type RoleFormState } from "@/actions/roles";
 import type { RoleMember, UserSummary } from "@/types/roles";
 import { initials } from "@/components/roles/RoleMembersList";
@@ -18,6 +19,7 @@ interface RoleMembersProps {
 
 /** Interactive Members panel: list, remove a member, add one from the tenant directory. */
 export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMembersProps) {
+	const locale = useLocale();
 	const [error, setError] = useState<string | null>(null);
 	const [selectedId, setSelectedId] = useState("");
 	const [pending, startTransition] = useTransition();
@@ -57,7 +59,7 @@ export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMember
 							{canEdit && (
 								<button
 									type="button"
-									onClick={() => run(() => unassignMember(roleId, member.userId))}
+									onClick={() => run(() => unassignMember(locale, roleId, member.userId))}
 									disabled={pending}
 									className="min-h-9 rounded-[5px] border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-danger hover:border-danger hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-55"
 									aria-label={`Remove ${member.fullName} from this role`}
@@ -89,7 +91,7 @@ export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMember
 						</select>
 						<button
 							type="button"
-							onClick={() => run(() => assignMember(roleId, selectedId))}
+							onClick={() => run(() => assignMember(locale, roleId, selectedId))}
 							disabled={pending || !selectedId}
 							className="min-h-9 rounded-[5px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
 						>

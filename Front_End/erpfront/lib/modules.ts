@@ -1,6 +1,6 @@
-import { resourceGroupLabel } from "@/lib/resource-groups";
+import { resourceGroupKey } from "@/lib/resource-groups";
 
-export type ModuleGroup = "Operations" | "Business partners" | "Finance" | "Insight & system";
+export type ModuleGroup = "operations" | "business_partners" | "finance" | "insight_system";
 
 export interface ModuleEntry {
 	id: string;
@@ -20,11 +20,11 @@ export interface ModuleEntry {
  */
 /** Derives a module entry's group from its backend resource; throws on a resource with no group, since every module-launcher resource must be listed in resource-groups.ts. */
 function moduleGroup(resource: string): ModuleGroup {
-	const label = resourceGroupLabel(resource);
-	if (!label) {
+	const key = resourceGroupKey(resource);
+	if (!key) {
 		throw new Error(`resource "${resource}" is not listed in any resource group`);
 	}
-	return label as ModuleGroup;
+	return key as ModuleGroup;
 }
 
 export const MODULE_REGISTRY: ModuleEntry[] = [
@@ -43,5 +43,5 @@ export const MODULE_REGISTRY: ModuleEntry[] = [
 	{ id: "reporting", label: "Reporting", path: "/reporting", description: "Sales, stock & revenue KPIs", group: moduleGroup("reporting"), permissionResource: "reporting" },
 	{ id: "notifications", label: "Notifications", path: "/notifications", description: "Alerts & order updates", group: moduleGroup("notification"), permissionResource: "notification" },
 	{ id: "audit-log", label: "Audit Logs", path: "/settings/audit-log", description: "User actions & data changes", group: moduleGroup("audit"), permissionResource: "audit" },
-	{ id: "settings", label: "Settings", path: "/settings", description: "Tenant & organization setup", group: "Insight & system" },
+	{ id: "settings", label: "Settings", path: "/settings", description: "Tenant & organization setup", group: "insight_system" },
 ];

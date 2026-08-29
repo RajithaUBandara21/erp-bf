@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { AuditLogQueryParams } from "@/types/audit";
 import { buildAuditLogQuery } from "@/lib/audit-log";
 

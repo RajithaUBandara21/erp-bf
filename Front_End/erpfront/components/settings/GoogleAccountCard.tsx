@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "next-intl";
 import { connectGoogle, disconnectGoogle, type OAuthActionState } from "@/actions/oauth";
 import type { GoogleLinkStatus } from "@/types/oauth";
 
@@ -8,8 +9,12 @@ const initialState: OAuthActionState = {};
 
 // i18n keys (build-plan 4): google_account_title, google_account_intro, connect, disconnect, connected_as
 export function GoogleAccountCard({ status }: { status: GoogleLinkStatus }) {
-	const [connectState, connectAction, connectPending] = useActionState(connectGoogle, initialState);
-	const [disconnectState, disconnectAction, disconnectPending] = useActionState(disconnectGoogle, initialState);
+	const locale = useLocale();
+	const [connectState, connectAction, connectPending] = useActionState(connectGoogle.bind(null, locale), initialState);
+	const [disconnectState, disconnectAction, disconnectPending] = useActionState(
+		disconnectGoogle.bind(null, locale),
+		initialState,
+	);
 
 	return (
 		<div className="rounded-lg border border-border bg-surface p-6 shadow-sm">

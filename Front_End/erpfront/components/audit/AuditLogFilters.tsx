@@ -2,7 +2,7 @@
 
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import type { AuditLogQueryParams } from "@/types/audit";
 import type { UserSummary } from "@/types/roles";
 import { buildAuditLogQuery } from "@/lib/audit-log";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { useLocale } from "next-intl";
 import { signOut } from "@/actions/auth";
 
 function SubmitButton() {
@@ -18,8 +19,10 @@ function SubmitButton() {
 }
 
 export function SignOutButton() {
+	const locale = useLocale();
+
 	return (
-		<form action={signOut}>
+		<form action={signOut.bind(null, locale)}>
 			<SubmitButton />
 		</form>
 	);

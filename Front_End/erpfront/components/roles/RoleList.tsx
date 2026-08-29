@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { RoleSummary } from "@/types/roles";
 import { RoleTypeBadge } from "@/components/roles/RoleTypeBadge";
 

@@ -1,0 +1,50 @@
+{
+	"shell": {
+		"brand": "Universal ERP"
+	},
+	"moduleLauncher": {
+		"heading": "මොඩියුල",
+		"signedInAs": "{email} ලෙස පුරන ලදී",
+		"searchPlaceholder": "මොඩියුල සොයන්න...",
+		"searchLabel": "මොඩියුල සොයන්න",
+		"gridView": "ග්‍රිඩ් දසුන",
+		"listView": "ලැයිස්තු දසුන",
+		"noMatches": "\"{query}\" ට ගැලපෙන මොඩියුල නොමැත.",
+		"noAccess": "{label} - ප්‍රවේශය නැත"
+	},
+	"moduleGroups": {
+		"operations": "මෙහෙයුම්",
+		"business_partners": "ව්‍යාපාරික හවුල්කරුවන්",
+		"finance": "මූල්‍ය",
+		"insight_system": "තීක්ෂණය සහ පද්ධතිය"
+	},
+	"modules": {
+		"products": { "label": "නිෂ්පාදන", "description": "නාමාවලිය, මිල ගණන්, ප්‍රභේද" },
+		"inventory": { "label": "තොග කළමනාකරණය", "description": "තොග, ගබඩා, මාරු කිරීම්" },
+		"purchasing": { "label": "ප්‍රසම්පාදන", "description": "මිලදී ගැනීමේ ඇණවුම්, භාණ්ඩ ලැබීම" },
+		"sales": { "label": "විකුණුම්", "description": "මිල ගණන් කථන, ඇණවුම්, ඉන්වොයිස්" },
+		"pos": { "label": "විකුණුම් ස්ථානය", "description": "මුදල් අයකැමි පිටවීම සහ රිසිට්පත්" },
+		"ecommerce": { "label": "විද්‍යුත් වාණිජ්‍ය", "description": "වෙළඳසැල සහ මාර්ගගත ඇණවුම්" },
+		"customers": { "label": "පාරිභෝගිකයන්", "description": "පැතිකඩ, ලිපිනයන්, ඉතිහාසය" },
+		"suppliers": { "label": "සැපයුම්කරුවන්", "description": "සම්බන්ධතා සහ මිලදී ගැනීමේ ඉතිහාසය" },
+		"shipping": { "label": "නැව්ගත කිරීම", "description": "බෙදාහැරීම් සහ නිරීක්ෂණය" },
+		"payments": { "label": "ගෙවීම්", "description": "ක්‍රම, ගනුදෙනු, ආපසු ගෙවීම්" },
+		"accounting": { "label": "ගිණුම්කරණය", "description": "සඟරා, ලැබිය යුතු ගිණුම්, ගෙවිය යුතු ගිණුම්" },
+		"promotions": { "label": "ප්‍රවර්ධන", "description": "වට්ටම් සහ කූපන්" },
+		"reporting": { "label": "වාර්තාකරණය", "description": "විකුණුම්, තොග සහ ආදායම් KPI" },
+		"notifications": { "label": "දැනුම්දීම්", "description": "අනතුරු ඇඟවීම් සහ ඇණවුම් යාවත්කාලීන" },
+		"audit-log": { "label": "විගණන සටහන්", "description": "පරිශීලක ක්‍රියා සහ දත්ත වෙනස්කම්" },
+		"settings": { "label": "සැකසුම්", "description": "කුලී පාරිභෝගික සහ සංවිධාන පිහිටුවීම" }
+	},
+	"modulePlaceholder": {
+		"notBuilt": "{label} තවම ගොඩනගා නැත"
+	},
+	"languageSwitcher": {
+		"label": "භාෂාව",
+		"locales": {
+			"en": "ඉංග්‍රීසි",
+			"si": "සිංහල",
+			"ta": "දෙමළ"
+		}
+	}
+}

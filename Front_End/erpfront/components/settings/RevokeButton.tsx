@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "next-intl";
 import { revokeSession, type RevokeState } from "@/actions/sessions";
 
 const initialState: RevokeState = {};
 
 // i18n key (build-plan 4): revoke
 export function RevokeButton({ sessionId }: { sessionId: string }) {
-	const [state, formAction, pending] = useActionState(revokeSession, initialState);
+	const locale = useLocale();
+	const [state, formAction, pending] = useActionState(revokeSession.bind(null, locale), initialState);
 
 	return (
 		<form action={formAction} className="flex flex-col items-end gap-1">

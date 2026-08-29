@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "next-intl";
 import { signIn, type SignInFormState } from "@/actions/auth";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 const initialState: SignInFormState = {};
 
 export function SignInForm() {
-	const [state, formAction, pending] = useActionState(signIn, initialState);
+	const locale = useLocale();
+	const [state, formAction, pending] = useActionState(signIn.bind(null, locale), initialState);
 
 	return (
 		<>
