@@ -34,7 +34,9 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh",
-								"/api/auth/logout", "/actuator/health").permitAll()
+								"/api/auth/logout", "/actuator/health",
+								"/api/auth/oauth/google/login-url", "/api/auth/oauth/google/callback",
+								"/api/auth/oauth/google/exchange").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(handling -> handling.authenticationEntryPoint(this::sendUnauthorized))
 				.addFilterBefore(new JwtAuthenticationFilter(jwtService, revokedSessionRegistry),
