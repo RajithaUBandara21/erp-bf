@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,27 +24,22 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequiredArgsConstructor
 public class GoogleOAuthController {
 
-	private static final String SCOPE = "openid email profile";
-
-	private final GoogleOAuthProperties googleOAuthProperties;
 	private final OAuthStateService oAuthStateService;
 	private final GoogleTokenExchangeClient googleTokenExchangeClient;
 	private final OAuthLoginExchangeService oAuthLoginExchangeService;
-	private final UserRepository userRepository;
-	private final OAuthAccountRepository oAuthAccountRepository;
-	private final SessionTokenIssuer sessionTokenIssuer;
+	private final OAuthAccountService oAuthAccountService;
 
 	@Value("${FRONTEND_BASE_URL:http://localhost:3000}")
 	private String frontendBaseUrl;
 
 	@PostMapping("/login-url")
 	public ResponseEntity<AuthorizationUrlResponse> loginUrl() {
-		return ResponseEntity.ok(buildAuthorizationUrl(null));
+		return ResponseEntity.ok(oAuthAccountService.buildAuthorizationUrl(null));
 	}
 
 	@PostMapping("/link-url")
 	public ResponseEntity<AuthorizationUrlResponse> linkUrl(@AuthenticationPrincipal AuthenticatedUser caller) {
-		return ResponseEntity.ok(buildAuthorizationUrl(caller.userId()));
+		return ResponseEntity.ok(oAuthAccountService.buildAuthorizationUrl(caller.userId()));
 	}
 
 	@GetMapping("/callback")
@@ -82,83 +76,25 @@ public class GoogleOAuthController {
 
 	@GetMapping
 	public ResponseEntity<LinkStatusResponse> status(@AuthenticationPrincipal AuthenticatedUser caller) {
-		return oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(caller.tenantId(), caller.userId(), OAuthProvider.GOOGLE)
-				.map(account -> ResponseEntity.ok(new LinkStatusResponse(true, account.getProviderEmail())))
-				.orElseGet(() -> ResponseEntity.ok(new LinkStatusResponse(false, null)));
+		return ResponseEntity.ok(oAuthAccountService.status(caller));
 	}
 
 	@DeleteMapping
 	public ResponseEntity<Void> unlink(@AuthenticationPrincipal AuthenticatedUser caller) {
-		oAuthAccountRepository.deleteByTenantIdAndUserIdAndProvider(
-				caller.tenantId(), caller.userId(), OAuthProvider.GOOGLE);
+		oAuthAccountService.unlink(caller);
 		return ResponseEntity.noContent().build();
 	}
 
 	private ResponseEntity<Void> handleLink(UUID userId, GoogleIdentity identity) {
-		Optional<User> user = userRepository.findById(userId).filter(User::isActive);
-		if (user.isEmpty()) {
-			return redirectTo(signInError(null));
-		}
-
-		Optional<OAuthAccount> linkedToAnotherUser = oAuthAccountRepository
-				.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, identity.providerUserId())
-				.filter(account -> !account.getUserId().equals(userId));
-		if (linkedToAnotherUser.isPresent()) {
-			return redirectTo(signInError("already-linked"));
-		}
-
-		OAuthAccount account = oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(user.get().getTenantId(), userId, OAuthProvider.GOOGLE)
-				.orElseGet(OAuthAccount::new);
-		account.setTenantId(user.get().getTenantId());
-		account.setUserId(userId);
-		account.setProvider(OAuthProvider.GOOGLE);
-		account.setProviderUserId(identity.providerUserId());
-		account.setProviderEmail(identity.email());
-		oAuthAccountRepository.save(account);
-
-		return redirectTo(settingsLinked());
+		OAuthLinkResult result = oAuthAccountService.link(userId, identity);
+		return result.linked() ? redirectTo(settingsLinked()) : redirectTo(signInError(result.errorReason()));
 	}
 
 	private ResponseEntity<Void> handleLogin(GoogleIdentity identity) {
-		Optional<OAuthAccount> account = oAuthAccountRepository
-				.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, identity.providerUserId());
-		if (account.isEmpty()) {
-			return redirectTo(signInError("not-linked"));
-		}
-
-		Optional<User> user = userRepository.findById(account.get().getUserId()).filter(User::isActive);
-		if (user.isEmpty()) {
-			return redirectTo(signInError(null));
-		}
-
-		Session session = sessionTokenIssuer.createSession(user.get(), ClientType.WEB);
-		TokenResponse tokenResponse = sessionTokenIssuer.issueTokens(user.get(), session);
-		String exchangeCode = oAuthLoginExchangeService.issue(tokenResponse);
-
-		return redirectTo(signInCode(exchangeCode));
-	}
-
-	private AuthorizationUrlResponse buildAuthorizationUrl(UUID linkedUserId) {
-		if (!googleOAuthProperties.configured()) {
-			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Google sign-in is not configured");
-		}
-
-		ClientRegistration registration = googleOAuthProperties.toClientRegistration();
-		String state = oAuthStateService.issue(linkedUserId);
-
-		String authorizationUrl = UriComponentsBuilder
-				.fromUriString(registration.getProviderDetails().getAuthorizationUri())
-				.queryParam("client_id", registration.getClientId())
-				.queryParam("redirect_uri", registration.getRedirectUri())
-				.queryParam("response_type", "code")
-				.queryParam("scope", SCOPE)
-				.queryParam("state", state)
-				.build()
-				.toUriString();
-
-		return new AuthorizationUrlResponse(authorizationUrl);
+		OAuthLoginResult result = oAuthAccountService.login(identity);
+		return result.succeeded()
+				? redirectTo(signInCode(result.exchangeCode()))
+				: redirectTo(signInError(result.errorReason()));
 	}
 
 	private static ResponseEntity<Void> redirectTo(URI uri) {
