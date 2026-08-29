@@ -21,7 +21,7 @@ export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
 
 	return (
 		<div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-sm">
-			<table className="w-full min-w-205 border-collapse text-[13px]">
+			<table className="w-full min-w-160 border-collapse text-[13px] sm:min-w-0">
 				<thead>
 					<tr className="border-b border-border bg-surface-alt text-left text-[11px] font-bold uppercase tracking-wide text-muted">
 						<th className="p-3">Timestamp</th>

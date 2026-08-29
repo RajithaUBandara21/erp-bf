@@ -27,7 +27,7 @@ export function AuditLogPagination({
 	}
 
 	return (
-		<div className="mt-4 flex items-center justify-between gap-3 text-[13px]">
+		<div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px]">
 			<span className="text-muted">
 				Showing {rangeStart}-{rangeEnd} of {totalElements}
 			</span>

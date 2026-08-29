@@ -11,7 +11,7 @@ export default async function SettingsLayout({ children }: LayoutProps<"/setting
 	return (
 		<div className="flex min-h-full flex-1 flex-col bg-bg text-text">
 			<SettingsHeader />
-			<main className="mx-auto w-full max-w-[780px] flex-1 p-6">{children}</main>
+			<main className="mx-auto w-full max-w-[1100px] flex-1 p-6">{children}</main>
 		</div>
 	);
 }

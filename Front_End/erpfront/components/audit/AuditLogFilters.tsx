@@ -52,14 +52,14 @@ export function AuditLogFilters({
 	}
 
 	return (
-		<form onSubmit={onSubmit} className="mb-4 flex flex-wrap items-end gap-3">
+		<form onSubmit={onSubmit} className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
 			<Field label="Entity type">
 				<input
 					type="text"
 					value={values.entityType}
 					onChange={set("entityType")}
 					placeholder="e.g. Role"
-					className="min-h-9 w-36 rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none"
+					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-36"
 				/>
 			</Field>
 			<Field label="Action">
@@ -68,14 +68,14 @@ export function AuditLogFilters({
 					value={values.action}
 					onChange={set("action")}
 					placeholder="e.g. role.created"
-					className="min-h-9 w-40 rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none"
+					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-40"
 				/>
 			</Field>
 			<Field label="Actor">
 				<select
 					value={values.actorId}
 					onChange={set("actorId")}
-					className="min-h-9 w-44 rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none"
+					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-44"
 				>
 					<option value="">All actors</option>
 					{actors.map((actor) => (
@@ -90,7 +90,7 @@ export function AuditLogFilters({
 					type="date"
 					value={values.from}
 					onChange={set("from")}
-					className="min-h-9 rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none"
+					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-auto"
 				/>
 			</Field>
 			<Field label="To">
@@ -98,7 +98,7 @@ export function AuditLogFilters({
 					type="date"
 					value={values.to}
 					onChange={set("to")}
-					className="min-h-9 rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none"
+					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-auto"
 				/>
 			</Field>
 			<button
