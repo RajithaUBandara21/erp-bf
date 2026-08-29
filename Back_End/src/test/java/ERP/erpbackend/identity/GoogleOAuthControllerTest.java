@@ -3,6 +3,7 @@ package ERP.erpbackend.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ERP.erpbackend.TestcontainersConfiguration;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -71,6 +73,14 @@ class GoogleOAuthControllerTest {
 	@MockitoBean
 	private GoogleTokenExchangeClient googleTokenExchangeClient;
 
+	@MockitoBean
+	private GoogleOAuthRateLimiter googleOAuthRateLimiter;
+
+	@BeforeEach
+	void allowByDefault() {
+		when(googleOAuthRateLimiter.allow(anyString())).thenReturn(true);
+	}
+
 	private User registerUser(String email) {
 		TokenResponse account = registrationService.register(
 				new RegisterRequest("Acme " + email, "Owner", email, PASSWORD, ClientType.WEB));
@@ -104,6 +114,15 @@ class GoogleOAuthControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.authorizationUrl", containsString("client_id=test-client-id")))
 				.andExpect(jsonPath("$.authorizationUrl", containsString("scope=openid")));
+	}
+
+	@Test
+	void loginUrlReturnsTooManyRequestsWhenRateLimitExceeded() throws Exception {
+		when(googleOAuthRateLimiter.allow(anyString())).thenReturn(false);
+
+		mockMvc.perform(post("/api/auth/oauth/google/login-url"))
+				.andExpect(status().isTooManyRequests())
+				.andExpect(jsonPath("$.message").exists());
 	}
 
 	@Test
@@ -259,6 +278,17 @@ class GoogleOAuthControllerTest {
 						.contentType("application/json")
 						.content("{ \"code\": \"does-not-exist\" }"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void exchangeReturnsTooManyRequestsWhenRateLimitExceeded() throws Exception {
+		when(googleOAuthRateLimiter.allow(anyString())).thenReturn(false);
+
+		mockMvc.perform(post("/api/auth/oauth/google/exchange")
+						.contentType("application/json")
+						.content("{ \"code\": \"does-not-exist\" }"))
+				.andExpect(status().isTooManyRequests())
+				.andExpect(jsonPath("$.message").exists());
 	}
 
 	@Test

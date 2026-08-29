@@ -1,5 +1,6 @@
 package ERP.erpbackend.identity;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Optional;
@@ -28,12 +29,17 @@ public class GoogleOAuthController {
 	private final GoogleTokenExchangeClient googleTokenExchangeClient;
 	private final OAuthLoginExchangeService oAuthLoginExchangeService;
 	private final OAuthAccountService oAuthAccountService;
+	private final GoogleOAuthRateLimiter googleOAuthRateLimiter;
 
 	@Value("${FRONTEND_BASE_URL:http://localhost:3000}")
 	private String frontendBaseUrl;
 
 	@PostMapping("/login-url")
-	public ResponseEntity<AuthorizationUrlResponse> loginUrl() {
+	public ResponseEntity<AuthorizationUrlResponse> loginUrl(HttpServletRequest servletRequest) {
+		if (!googleOAuthRateLimiter.allow(servletRequest.getRemoteAddr())) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Too many requests. Please try again later.");
+		}
 		return ResponseEntity.ok(oAuthAccountService.buildAuthorizationUrl(null));
 	}
 
@@ -68,7 +74,12 @@ public class GoogleOAuthController {
 	}
 
 	@PostMapping("/exchange")
-	public ResponseEntity<TokenResponse> exchange(@Valid @RequestBody ExchangeCodeRequest request) {
+	public ResponseEntity<TokenResponse> exchange(@Valid @RequestBody ExchangeCodeRequest request,
+			HttpServletRequest servletRequest) {
+		if (!googleOAuthRateLimiter.allow(servletRequest.getRemoteAddr())) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Too many requests. Please try again later.");
+		}
 		return oAuthLoginExchangeService.consume(request.code())
 				.map(ResponseEntity::ok)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired code"));
