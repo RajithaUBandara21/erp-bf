@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -156,6 +157,25 @@ class OrganizationServiceImplTest {
 
 		assertThat(names).isEmpty();
 		verifyNoInteractions(organizationRepository);
+	}
+
+	@Test
+	void findTenantIdReturnsTheOwningTenantForAnExistingOrganization() {
+		UUID organizationId = UUID.randomUUID();
+		UUID tenantId = UUID.randomUUID();
+		Organization organization = organizationWith(organizationId, "Head Office");
+		organization.setTenantId(tenantId);
+		when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+
+		assertThat(organizationService.findTenantId(organizationId)).contains(tenantId);
+	}
+
+	@Test
+	void findTenantIdIsEmptyForAnUnknownOrganizationId() {
+		UUID organizationId = UUID.randomUUID();
+		when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
+
+		assertThat(organizationService.findTenantId(organizationId)).isEmpty();
 	}
 
 }

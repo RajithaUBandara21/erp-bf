@@ -127,8 +127,9 @@ public class RoleService {
 		Role role = requireRole(caller.tenantId(), roleId);
 		UUID membershipId = requireTenantMembership(caller.tenantId(), userId);
 
-		if (isOwnerRole(role) && !callerHoldsOwner(caller)) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only an Owner can grant the Owner role.");
+		if (isOwnerEquivalentRole(role) && !callerHoldsOwnerEquivalent(caller)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+					"Only an Owner or Tenant Admin can grant the " + role.getName() + " role.");
 		}
 		if (userRoleRepository.existsByMembershipIdAndRoleId(membershipId, roleId)) {
 			return;
@@ -157,12 +158,13 @@ public class RoleService {
 		if (assignment == null) {
 			return;
 		}
-		if (isOwnerRole(role)) {
-			// Serialize concurrent last-Owner removals so two can't both pass the count check.
+		if (isOwnerEquivalentRole(role)) {
+			// Serialize concurrent last-holder removals so two can't both pass the count check.
 			roleRepository.findByIdForUpdate(roleId);
 			if (userRoleRepository.countByRoleId(roleId) <= 1) {
 				throw new ResponseStatusException(HttpStatus.CONFLICT,
-						"The last Owner cannot be removed. Assign the Owner role to another user first.");
+						"The last " + role.getName() + " cannot be removed. Assign the "
+								+ role.getName() + " role to another user first.");
 			}
 		}
 		userRoleRepository.delete(assignment);
@@ -196,13 +198,21 @@ public class RoleService {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 	}
 
-	private boolean isOwnerRole(Role role) {
-		return role.isSystemManaged() && SystemRole.OWNER.displayName().equals(role.getName());
+	/** Owner and Tenant Admin are both full-access system roles: granting or removing either is guarded. */
+	private boolean isOwnerEquivalentRole(Role role) {
+		return role.isSystemManaged()
+				&& (SystemRole.OWNER.displayName().equals(role.getName())
+						|| SystemRole.TENANT_ADMIN.displayName().equals(role.getName()));
 	}
 
-	private boolean callerHoldsOwner(AuthenticatedUser caller) {
-		return roleRepository.findByTenantIdAndName(caller.tenantId(), SystemRole.OWNER.displayName())
-				.map(owner -> userRoleRepository.existsByMembershipIdAndRoleId(caller.membershipId(), owner.getId()))
+	private boolean callerHoldsOwnerEquivalent(AuthenticatedUser caller) {
+		return callerHoldsSystemRole(caller, SystemRole.OWNER)
+				|| callerHoldsSystemRole(caller, SystemRole.TENANT_ADMIN);
+	}
+
+	private boolean callerHoldsSystemRole(AuthenticatedUser caller, SystemRole systemRole) {
+		return roleRepository.findByTenantIdAndName(caller.tenantId(), systemRole.displayName())
+				.map(role -> userRoleRepository.existsByMembershipIdAndRoleId(caller.membershipId(), role.getId()))
 				.orElse(false);
 	}
 

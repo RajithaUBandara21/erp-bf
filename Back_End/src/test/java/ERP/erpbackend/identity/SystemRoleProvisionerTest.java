@@ -83,12 +83,12 @@ class SystemRoleProvisionerTest {
 	}
 
 	@Test
-	void provisionsThreeSystemManagedRoles() {
+	void provisionsFourSystemManagedRoles() {
 		Fixture fixture = provisionFreshTenant("prov-roles");
 
 		List<Role> roles = roleRepository.findByTenantId(fixture.tenantId());
 		assertThat(roles).extracting(Role::getName)
-				.containsExactlyInAnyOrder("Owner", "Administrator", "Viewer");
+				.containsExactlyInAnyOrder("Owner", "Tenant Admin", "Administrator", "Viewer");
 		assertThat(roles).allMatch(Role::isSystemManaged);
 	}
 
@@ -97,19 +97,20 @@ class SystemRoleProvisionerTest {
 		Fixture fixture = provisionFreshTenant("prov-grants");
 
 		assertThat(grantCount(roleNamed(fixture.tenantId(), SystemRole.OWNER))).isEqualTo(95);
+		assertThat(grantCount(roleNamed(fixture.tenantId(), SystemRole.TENANT_ADMIN))).isEqualTo(95);
 		assertThat(grantCount(roleNamed(fixture.tenantId(), SystemRole.ADMINISTRATOR))).isEqualTo(90);
 		assertThat(grantCount(roleNamed(fixture.tenantId(), SystemRole.VIEWER))).isEqualTo(19);
 	}
 
 	@Test
-	void assignsOnlyTheOwnerRoleToTheFirstMembership() {
+	void assignsOwnerAndTenantAdminToTheFirstMembership() {
 		Fixture fixture = provisionFreshTenant("prov-assign");
 
 		List<UserRole> assignments = userRoleRepository.findByMembershipId(fixture.membershipId());
-		assertThat(assignments).hasSize(1);
-		assertThat(assignments.get(0).getRoleId())
-				.isEqualTo(roleNamed(fixture.tenantId(), SystemRole.OWNER).getId());
-		assertThat(assignments.get(0).getTenantId()).isEqualTo(fixture.tenantId());
+		assertThat(assignments).extracting(UserRole::getRoleId).containsExactlyInAnyOrder(
+				roleNamed(fixture.tenantId(), SystemRole.OWNER).getId(),
+				roleNamed(fixture.tenantId(), SystemRole.TENANT_ADMIN).getId());
+		assertThat(assignments).extracting(UserRole::getTenantId).containsOnly(fixture.tenantId());
 	}
 
 }

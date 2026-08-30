@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Creates the built-in {@link SystemRole}s for a newly created tenant and assigns its first member the Owner role. */
+/** Creates the built-in {@link SystemRole}s for a newly created tenant and assigns its first member the Owner and Tenant Admin roles. */
 @Service
 @RequiredArgsConstructor
 public class SystemRoleProvisioner {
@@ -34,7 +34,7 @@ public class SystemRoleProvisioner {
 					.toList();
 			rolePermissionRepository.saveAll(grants);
 
-			if (systemRole == SystemRole.OWNER) {
+			if (systemRole == SystemRole.OWNER || systemRole == SystemRole.TENANT_ADMIN) {
 				userRoleRepository.save(assignment(tenantId, ownerMembershipId, roleId));
 			}
 		}

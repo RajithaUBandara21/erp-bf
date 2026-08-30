@@ -132,14 +132,15 @@ class RegistrationServiceTest {
 
 		List<Role> roles = roleRepository.findByTenantId(account.tenantId());
 		assertThat(roles).extracting(Role::getName)
-				.containsExactlyInAnyOrder("Owner", "Administrator", "Viewer");
+				.containsExactlyInAnyOrder("Owner", "Tenant Admin", "Administrator", "Viewer");
 		assertThat(roles).allMatch(Role::isSystemManaged);
 
 		Role owner = roleRepository.findByTenantIdAndName(account.tenantId(), "Owner").orElseThrow();
+		Role tenantAdmin = roleRepository.findByTenantIdAndName(account.tenantId(), "Tenant Admin").orElseThrow();
 		UUID membershipId = membershipRepository.findByUserId(account.userId()).getFirst().getId();
 		assertThat(userRoleRepository.findByMembershipId(membershipId))
-				.singleElement()
-				.satisfies(assignment -> assertThat(assignment.getRoleId()).isEqualTo(owner.getId()));
+				.extracting(UserRole::getRoleId)
+				.containsExactlyInAnyOrder(owner.getId(), tenantAdmin.getId());
 	}
 
 	@Test

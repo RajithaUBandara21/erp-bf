@@ -3,6 +3,7 @@ package ERP.erpbackend.organization;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,6 +48,11 @@ public class OrganizationServiceImpl implements OrganizationService {
 		}
 		return organizationRepository.findAllById(organizationIds).stream()
 				.collect(Collectors.toMap(Organization::getId, Organization::getName));
+	}
+
+	@Override
+	public Optional<UUID> findTenantId(UUID organizationId) {
+		return organizationRepository.findById(organizationId).map(Organization::getTenantId);
 	}
 
 	private String uniqueCodeFor(String organizationName) {

@@ -11,6 +11,9 @@ public enum SystemRole {
 
 	OWNER("Owner", "Full, unrestricted access to every module, including billing and subscription.",
 			permission -> true),
+	TENANT_ADMIN("Tenant Admin",
+			"Owner-level access to every Organization under the Tenant, including billing and subscription.",
+			permission -> true),
 	ADMINISTRATOR("Administrator", "Manages users, roles, organizations, and every business module. Cannot change billing.",
 			permission -> !"billing".equals(permission.getResource())),
 	VIEWER("Viewer", "Read-only access across every module. Creates or changes nothing.",

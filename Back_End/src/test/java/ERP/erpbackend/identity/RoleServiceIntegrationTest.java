@@ -115,7 +115,7 @@ class RoleServiceIntegrationTest {
 		var roles = roleService.listRoles(callerA);
 
 		assertThat(roles).extracting(RoleSummaryResponse::name)
-				.containsExactlyInAnyOrder("Owner", "Administrator", "Viewer");
+				.containsExactlyInAnyOrder("Owner", "Tenant Admin", "Administrator", "Viewer");
 		assertThat(roles).allMatch(RoleSummaryResponse::systemManaged);
 
 		RoleSummaryResponse owner = roles.stream()
@@ -361,6 +361,31 @@ class RoleServiceIntegrationTest {
 
 		roleService.unassignMember(owner, ownerRoleId, secondOwner.getId());
 		assertThat(userRoleRepository.countByRoleId(ownerRoleId)).isEqualTo(1);
+	}
+
+	@Test
+	void nonOwnerCannotGrantTheTenantAdminRole() {
+		AuthenticatedUser owner = registerOwner("ta-grant@acme.test");
+		User nonOwner = createTenantUser(owner, "nonowner@ta-grant.test");
+		User target = createTenantUser(owner, "target@ta-grant.test");
+		UUID tenantAdminRoleId = roleIdNamed(owner, "Tenant Admin");
+
+		assertStatus(() -> roleService.assignMember(asCaller(nonOwner), tenantAdminRoleId, target.getId()),
+				HttpStatus.FORBIDDEN);
+	}
+
+	@Test
+	void theLastTenantAdminCannotBeUnassignedButANonLastTenantAdminCan() {
+		AuthenticatedUser owner = registerOwner("last-tenant-admin@acme.test");
+		UUID tenantAdminRoleId = roleIdNamed(owner, "Tenant Admin");
+
+		assertConflict(() -> roleService.unassignMember(owner, tenantAdminRoleId, owner.userId()));
+
+		User secondAdmin = createTenantUser(owner, "second@last-tenant-admin.test");
+		roleService.assignMember(owner, tenantAdminRoleId, secondAdmin.getId());
+
+		roleService.unassignMember(owner, tenantAdminRoleId, secondAdmin.getId());
+		assertThat(userRoleRepository.countByRoleId(tenantAdminRoleId)).isEqualTo(1);
 	}
 
 	@Test
