@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { API_BASE_URL, postJson } from "@/lib/api";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
@@ -31,19 +32,20 @@ export async function signUp(locale: string, _prevState: SignUpFormState, formDa
 	const confirmPassword = String(formData.get("confirmPassword") ?? "");
 	const agreeTerms = formData.get("agreeTerms") === "on";
 	const values = { organizationName, fullName, email, agreeTerms };
+	const t = await getTranslations({ locale, namespace: "auth.signUp" });
 
 	const fieldErrors: Record<string, string> = {};
-	if (!organizationName) fieldErrors.organizationName = "Organization name is required.";
-	if (!fullName) fieldErrors.fullName = "Full name is required.";
-	if (!email) fieldErrors.email = "Email is required.";
+	if (!organizationName) fieldErrors.organizationName = t("orgNameRequired");
+	if (!fullName) fieldErrors.fullName = t("fullNameRequired");
+	if (!email) fieldErrors.email = t("emailRequired");
 	if (!PASSWORD_PATTERN.test(password)) {
-		fieldErrors.password = "Password must be at least 8 characters, with one number and one uppercase letter.";
+		fieldErrors.password = t("passwordInvalid");
 	}
 	if (password !== confirmPassword) {
-		fieldErrors.confirmPassword = "Passwords do not match.";
+		fieldErrors.confirmPassword = t("passwordMismatch");
 	}
 	if (!agreeTerms) {
-		fieldErrors.agreeTerms = "You must agree to the Terms of Service and Privacy Policy.";
+		fieldErrors.agreeTerms = t("agreeTermsRequired");
 	}
 	if (Object.keys(fieldErrors).length > 0) {
 		return { fieldErrors, values };
@@ -82,11 +84,12 @@ export async function signIn(locale: string, _prevState: SignInFormState, formDa
 	const password = String(formData.get("password") ?? "");
 	const remember = formData.get("remember") === "on";
 	const values = { organizationCode, email };
+	const t = await getTranslations({ locale, namespace: "auth.signIn" });
 
 	const fieldErrors: Record<string, string> = {};
-	if (!organizationCode) fieldErrors.organizationCode = "Organization code is required.";
-	if (!email) fieldErrors.email = "Email is required.";
-	if (!password) fieldErrors.password = "Password is required.";
+	if (!organizationCode) fieldErrors.organizationCode = t("orgCodeRequired");
+	if (!email) fieldErrors.email = t("emailRequired");
+	if (!password) fieldErrors.password = t("passwordRequired");
 	if (Object.keys(fieldErrors).length > 0) {
 		return { fieldErrors, values };
 	}

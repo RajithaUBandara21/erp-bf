@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 type Theme = "light" | "dark";
@@ -14,6 +15,7 @@ function currentTheme(): Theme {
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(currentTheme);
+  const t = useTranslations("settings.theme");
 
   function toggle() {
     const next: Theme = theme === "dark" ? "light" : "dark";
@@ -26,8 +28,8 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label="Toggle dark mode"
-      title="Toggle dark mode"
+      aria-label={t("toggle")}
+      title={t("toggle")}
       className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[5px] border border-border bg-surface-alt text-text"
     >
       <svg

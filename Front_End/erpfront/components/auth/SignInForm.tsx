@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { signIn, type SignInFormState } from "@/actions/auth";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
@@ -9,6 +9,7 @@ const initialState: SignInFormState = {};
 
 export function SignInForm() {
 	const locale = useLocale();
+	const t = useTranslations("auth.signIn");
 	const [state, formAction, pending] = useActionState(signIn.bind(null, locale), initialState);
 
 	return (
@@ -23,7 +24,7 @@ export function SignInForm() {
 				<Field
 					id="organizationCode"
 					name="organizationCode"
-					label="Organization code"
+					label={t("orgCodeLabel")}
 					type="text"
 					autoComplete="off"
 					defaultValue={state.values?.organizationCode}
@@ -32,7 +33,7 @@ export function SignInForm() {
 				<Field
 					id="email"
 					name="email"
-					label="Email"
+					label={t("emailLabel")}
 					type="email"
 					autoComplete="email"
 					defaultValue={state.values?.email}
@@ -41,7 +42,7 @@ export function SignInForm() {
 				<Field
 					id="password"
 					name="password"
-					label="Password"
+					label={t("passwordLabel")}
 					type="password"
 					autoComplete="current-password"
 					error={state.fieldErrors?.password}
@@ -49,7 +50,7 @@ export function SignInForm() {
 
 				<label className="mb-6 flex items-center gap-1.5 text-xs text-muted">
 					<input type="checkbox" name="remember" defaultChecked className="h-3.75 w-3.75 accent-accent" />
-					<span>Remember me</span>
+					<span>{t("rememberMe")}</span>
 				</label>
 
 				<button
@@ -57,13 +58,13 @@ export function SignInForm() {
 					disabled={pending}
 					className="min-h-11 w-full rounded-[5px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
 				>
-					{pending ? "Signing in..." : "Sign in"}
+					{pending ? t("submitting") : t("submit")}
 				</button>
 			</form>
 
 			<div className="my-5 flex items-center gap-3 text-[11px] font-semibold tracking-wide text-muted uppercase">
 				<span className="h-px flex-1 bg-border" />
-				<span>or</span>
+				<span>{t("orDivider")}</span>
 				<span className="h-px flex-1 bg-border" />
 			</div>
 

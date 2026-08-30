@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import { ThemeToggle } from "@/components/auth/ThemeToggle";
 
 interface AuthShellProps {
@@ -10,13 +11,15 @@ interface AuthShellProps {
 	wide?: boolean;
 }
 
-export function AuthShell({ title, description, children, footer, wide }: AuthShellProps) {
+export async function AuthShell({ title, description, children, footer, wide }: AuthShellProps) {
+	const t = await getTranslations("shell");
+
 	return (
 		<div className="flex min-h-full flex-1 flex-col bg-bg text-text">
 			<header className="flex h-14 items-center justify-between px-6">
 				<span className="flex items-center font-bold tracking-tight">
 					<span className="mr-2 inline-block h-5.5 w-5.5 rounded-md bg-accent" />
-					Universal ERP
+					{t("brand")}
 				</span>
 				<ThemeToggle />
 			</header>

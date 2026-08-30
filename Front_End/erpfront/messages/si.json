@@ -46,5 +46,104 @@
 			"si": "සිංහල",
 			"ta": "දෙමළ"
 		}
+	},
+	"auth": {
+		"signIn": {
+			"title": "පුරන්න",
+			"description": "ඔබගේ Universal ERP වැඩබිමට පුරන්න",
+			"orgCodeLabel": "සංවිධාන කේතය",
+			"emailLabel": "විද්‍යුත් තැපෑල",
+			"passwordLabel": "මුරපදය",
+			"rememberMe": "මාව මතක තබාගන්න",
+			"submit": "පුරන්න",
+			"submitting": "පුරමින්...",
+			"orDivider": "හෝ",
+			"noAccount": "ගිණුමක් නැද්ද?",
+			"createWorkspace": "ඔබේ වැඩබිම සාදන්න",
+			"orgCodeRequired": "සංවිධාන කේතය අවශ්‍යයි.",
+			"emailRequired": "විද්‍යුත් තැපෑල අවශ්‍යයි.",
+			"passwordRequired": "මුරපදය අවශ්‍යයි."
+		},
+		"signUp": {
+			"title": "ඔබේ වැඩබිම සාදන්න",
+			"description": "නව සංවිධානයක් සහ පරිපාලක ගිණුමක් සකසන්න",
+			"orgNameLabel": "සංවිධානයේ නම",
+			"orgNamePlaceholder": "Northstar Retail",
+			"fullNameLabel": "සම්පූර්ණ නම",
+			"fullNamePlaceholder": "Nimal Perera",
+			"emailLabel": "විද්‍යුත් තැපෑල",
+			"emailPlaceholder": "owner@northstar-retail.com",
+			"passwordLabel": "මුරපදය",
+			"passwordHint": "මුරපදයේ අවම වශයෙන් අක්ෂර 8ක්, එක් අංකයක් සහ එක් ලොකු අකුරක් තිබිය යුතුය.",
+			"confirmPasswordLabel": "මුරපදය තහවුරු කරන්න",
+			"agreeTerms": "මම <terms>සේවා නියම</terms> සහ <privacy>පෞද්ගලිකත්ව ප්‍රතිපත්තිය</privacy>ට එකඟ වෙමි",
+			"submit": "ගිණුම සාදන්න",
+			"submitting": "ගිණුම සාදමින්...",
+			"haveAccount": "දැනටමත් ගිණුමක් තිබේද?",
+			"signIn": "පුරන්න",
+			"orgNameRequired": "සංවිධානයේ නම අවශ්‍යයි.",
+			"fullNameRequired": "සම්පූර්ණ නම අවශ්‍යයි.",
+			"emailRequired": "විද්‍යුත් තැපෑල අවශ්‍යයි.",
+			"passwordInvalid": "මුරපදයේ අවම වශයෙන් අක්ෂර 8ක්, එක් අංකයක් සහ එක් ලොකු අකුරක් තිබිය යුතුය.",
+			"passwordMismatch": "මුරපද නොගැලපේ.",
+			"agreeTermsRequired": "ඔබ සේවා නියම සහ පෞද්ගලිකත්ව ප්‍රතිපත්තියට එකඟ විය යුතුය."
+		},
+		"google": {
+			"continue": "Google සමඟ ඉදිරියට යන්න",
+			"redirecting": "යළි-යොමු කරමින්...",
+			"notLinked": "මෙම Google ගිණුමට තවම කිසිදු ගිණුමක් සම්බන්ධ කර නැත. ඔබේ විද්‍යුත් තැපෑල සහ මුරපදය සමඟ පුරන්න, පසුව සැකසුම් වලින් Google සම්බන්ධ කරන්න.",
+			"emailUnverified": "ඔබේ Google ගිණුමේ විද්‍යුත් තැපෑල තහවුරු කර නැත. එය Google සමඟ තහවුරු කර නැවත උත්සාහ කරන්න.",
+			"alreadyLinked": "මෙම Google ගිණුම දැනටමත් වෙනත් පරිශීලකයෙකුට සම්බන්ධ කර ඇත.",
+			"signInFailed": "Google පිවිසුම අසාර්ථක විය. නැවත උත්සාහ කරන්න."
+		}
+	},
+	"settings": {
+		"title": "සැකසුම්",
+		"intro": "මෙම මනාපයන් සෑම මොඩියුලයක් හරහාම යෙදේ.",
+		"googleLinkedBanner": "ඔබේ Google ගිණුම සම්බන්ධ කර ඇත.",
+		"sessionsTile": {
+			"title": "සක්‍රීය සැසි",
+			"description": "ඔබේ ගිණුමට දැනට පුරා ඇති උපාංග."
+		},
+		"rolesTile": {
+			"title": "භූමිකා සහ අවසර",
+			"description": "භූමිකා අවසර එකට ගොනු කර වැඩබිම පුරා පරිශීලකයන්ට පවරනු ලැබේ."
+		},
+		"auditLogTile": {
+			"title": "විගණන සටහන්",
+			"description": "අනන්‍යතාව, ආරක්ෂාව සහ ව්‍යාපාරික දත්ත පුරා සටහන් වූ සෑම ක්‍රියාවක්ම."
+		},
+		"sessions": {
+			"title": "සක්‍රීය සැසි",
+			"intro": "ඔබේ ගිණුමට දැනට පුරා ඇති උපාංග.",
+			"loadError": "අපට දැන් ඔබේ සැසි පූරණය කළ නොහැකි විය. නැවත උත්සාහ කිරීමට පිටුව නැවුම් කරන්න.",
+			"thisDevice": "මෙම උපාංගය",
+			"signedIn": "{date} වන විට පුරන ලදී",
+			"lastActive": "අවසන් වරට සක්‍රීය වූයේ {time}",
+			"revoke": "අවලංගු කරන්න",
+			"revoking": "අවලංගු කරමින්...",
+			"revokeAllOthers": "අනෙකුත් සියලුම සැසි අවලංගු කරන්න",
+			"missingSession": "සැසිය සොයාගත නොහැක."
+		},
+		"clientType": {
+			"web": "වෙබ් බ්‍රවුසරය",
+			"mobile": "ජංගම යෙදුම",
+			"desktop": "ඩෙස්ක්ටොප් යෙදුම",
+			"tablet": "ටැබ්ලටය"
+		},
+		"google": {
+			"title": "Google ගිණුම",
+			"connectedAs": "{email} ලෙස සම්බන්ධ කර ඇත",
+			"notConnected": "සම්බන්ධ කර නැත",
+			"connect": "සම්බන්ධ කරන්න",
+			"connecting": "සම්බන්ධ කරමින්...",
+			"disconnect": "විසන්ධි කරන්න",
+			"disconnecting": "විසන්ධි කරමින්..."
+		},
+		"signOut": "පිටවන්න",
+		"signingOut": "පිටවෙමින්...",
+		"theme": {
+			"toggle": "අඳුරු ප්‍රකාරය මාරු කරන්න"
+		}
 	}
 }

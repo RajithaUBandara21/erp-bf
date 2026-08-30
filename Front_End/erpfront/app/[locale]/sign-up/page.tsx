@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link, redirect } from "@/i18n/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { SignUpForm } from "@/components/auth/SignUpForm";
@@ -8,17 +8,18 @@ export default async function SignUpPage() {
 	if (await hasAccessToken()) {
 		redirect({ href: "/", locale: await getLocale() });
 	}
+	const t = await getTranslations("auth.signUp");
 
 	return (
 		<AuthShell
-			title="Create your workspace"
-			description="Set up a new organization and admin account"
+			title={t("title")}
+			description={t("description")}
 			wide
 			footer={
 				<>
-					Already have an account?{" "}
+					{t("haveAccount")}{" "}
 					<Link href="/sign-in" className="font-semibold text-accent hover:underline">
-						Sign in
+						{t("signIn")}
 					</Link>
 				</>
 			}

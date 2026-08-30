@@ -1,13 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { signUp, type SignUpFormState } from "@/actions/auth";
 
 const initialState: SignUpFormState = {};
 
 export function SignUpForm() {
 	const locale = useLocale();
+	const t = useTranslations("auth.signUp");
 	const [state, formAction, pending] = useActionState(signUp.bind(null, locale), initialState);
 
 	return (
@@ -22,10 +23,10 @@ export function SignUpForm() {
 				<Field
 					id="organizationName"
 					name="organizationName"
-					label="Organization name"
+					label={t("orgNameLabel")}
 					type="text"
 					autoComplete="organization"
-					placeholder="Northstar Retail"
+					placeholder={t("orgNamePlaceholder")}
 					defaultValue={state.values?.organizationName}
 					error={state.fieldErrors?.organizationName}
 					full
@@ -33,10 +34,10 @@ export function SignUpForm() {
 				<Field
 					id="fullName"
 					name="fullName"
-					label="Full name"
+					label={t("fullNameLabel")}
 					type="text"
 					autoComplete="name"
-					placeholder="Nimal Perera"
+					placeholder={t("fullNamePlaceholder")}
 					defaultValue={state.values?.fullName}
 					error={state.fieldErrors?.fullName}
 					full
@@ -44,10 +45,10 @@ export function SignUpForm() {
 				<Field
 					id="email"
 					name="email"
-					label="Email"
+					label={t("emailLabel")}
 					type="email"
 					autoComplete="email"
-					placeholder="owner@northstar-retail.com"
+					placeholder={t("emailPlaceholder")}
 					defaultValue={state.values?.email}
 					error={state.fieldErrors?.email}
 					full
@@ -55,16 +56,16 @@ export function SignUpForm() {
 				<Field
 					id="password"
 					name="password"
-					label="Password"
+					label={t("passwordLabel")}
 					type="password"
 					autoComplete="new-password"
-					hint="Password must be at least 8 characters, with one number and one uppercase letter."
+					hint={t("passwordHint")}
 					error={state.fieldErrors?.password}
 				/>
 				<Field
 					id="confirmPassword"
 					name="confirmPassword"
-					label="Confirm password"
+					label={t("confirmPasswordLabel")}
 					type="password"
 					autoComplete="new-password"
 					error={state.fieldErrors?.confirmPassword}
@@ -79,14 +80,18 @@ export function SignUpForm() {
 					className="mt-0.5 h-3.75 w-3.75 shrink-0 accent-accent"
 				/>
 				<span>
-					I agree to the{" "}
-					<a href="#" className="font-semibold text-accent hover:underline">
-						Terms of Service
-					</a>{" "}
-					and{" "}
-					<a href="#" className="font-semibold text-accent hover:underline">
-						Privacy Policy
-					</a>
+					{t.rich("agreeTerms", {
+						terms: (chunks) => (
+							<a href="#" className="font-semibold text-accent hover:underline">
+								{chunks}
+							</a>
+						),
+						privacy: (chunks) => (
+							<a href="#" className="font-semibold text-accent hover:underline">
+								{chunks}
+							</a>
+						),
+					})}
 				</span>
 			</label>
 			{state.fieldErrors?.agreeTerms && (
@@ -98,7 +103,7 @@ export function SignUpForm() {
 				disabled={pending}
 				className="mt-4 min-h-11 w-full rounded-[5px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
 			>
-				{pending ? "Creating account..." : "Create account"}
+				{pending ? t("submitting") : t("submit")}
 			</button>
 		</form>
 	);

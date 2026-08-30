@@ -46,5 +46,104 @@
 			"si": "Sinhala",
 			"ta": "Tamil"
 		}
+	},
+	"auth": {
+		"signIn": {
+			"title": "Sign in",
+			"description": "Sign in to your Universal ERP workspace",
+			"orgCodeLabel": "Organization code",
+			"emailLabel": "Email",
+			"passwordLabel": "Password",
+			"rememberMe": "Remember me",
+			"submit": "Sign in",
+			"submitting": "Signing in...",
+			"orDivider": "or",
+			"noAccount": "Don''t have an account?",
+			"createWorkspace": "Create your workspace",
+			"orgCodeRequired": "Organization code is required.",
+			"emailRequired": "Email is required.",
+			"passwordRequired": "Password is required."
+		},
+		"signUp": {
+			"title": "Create your workspace",
+			"description": "Set up a new organization and admin account",
+			"orgNameLabel": "Organization name",
+			"orgNamePlaceholder": "Northstar Retail",
+			"fullNameLabel": "Full name",
+			"fullNamePlaceholder": "Nimal Perera",
+			"emailLabel": "Email",
+			"emailPlaceholder": "owner@northstar-retail.com",
+			"passwordLabel": "Password",
+			"passwordHint": "Password must be at least 8 characters, with one number and one uppercase letter.",
+			"confirmPasswordLabel": "Confirm password",
+			"agreeTerms": "I agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>",
+			"submit": "Create account",
+			"submitting": "Creating account...",
+			"haveAccount": "Already have an account?",
+			"signIn": "Sign in",
+			"orgNameRequired": "Organization name is required.",
+			"fullNameRequired": "Full name is required.",
+			"emailRequired": "Email is required.",
+			"passwordInvalid": "Password must be at least 8 characters, with one number and one uppercase letter.",
+			"passwordMismatch": "Passwords do not match.",
+			"agreeTermsRequired": "You must agree to the Terms of Service and Privacy Policy."
+		},
+		"google": {
+			"continue": "Continue with Google",
+			"redirecting": "Redirecting...",
+			"notLinked": "No account is linked to this Google account yet. Sign in with your email and password, then connect Google from Settings.",
+			"emailUnverified": "Your Google account''s email isn''t verified. Verify it with Google, then try again.",
+			"alreadyLinked": "This Google account is already linked to a different user.",
+			"signInFailed": "Google sign-in failed. Please try again."
+		}
+	},
+	"settings": {
+		"title": "Settings",
+		"intro": "These preferences apply across every module.",
+		"googleLinkedBanner": "Your Google account is connected.",
+		"sessionsTile": {
+			"title": "Active sessions",
+			"description": "Devices currently signed in to your account."
+		},
+		"rolesTile": {
+			"title": "Roles & permissions",
+			"description": "Roles bundle permissions and are assigned to users across the workspace."
+		},
+		"auditLogTile": {
+			"title": "Audit logs",
+			"description": "Every recorded action across identity, security, and business data."
+		},
+		"sessions": {
+			"title": "Active sessions",
+			"intro": "Devices currently signed in to your account.",
+			"loadError": "We couldn''t load your sessions right now. Please refresh to try again.",
+			"thisDevice": "This device",
+			"signedIn": "Signed in {date}",
+			"lastActive": "Last active {time}",
+			"revoke": "Revoke",
+			"revoking": "Revoking...",
+			"revokeAllOthers": "Revoke all other sessions",
+			"missingSession": "Missing session."
+		},
+		"clientType": {
+			"web": "Web browser",
+			"mobile": "Mobile app",
+			"desktop": "Desktop app",
+			"tablet": "Tablet"
+		},
+		"google": {
+			"title": "Google account",
+			"connectedAs": "Connected as {email}",
+			"notConnected": "Not connected",
+			"connect": "Connect",
+			"connecting": "Connecting...",
+			"disconnect": "Disconnect",
+			"disconnecting": "Disconnecting..."
+		},
+		"signOut": "Sign out",
+		"signingOut": "Signing out...",
+		"theme": {
+			"toggle": "Toggle dark mode"
+		}
 	}
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { authedFetch } from "@/lib/api";
 
@@ -15,7 +16,8 @@ export interface RevokeState {
 export async function revokeSession(locale: string, _prev: RevokeState, formData: FormData): Promise<RevokeState> {
 	const sessionId = String(formData.get("sessionId") ?? "");
 	if (!sessionId) {
-		return { error: "Missing session." };
+		const t = await getTranslations({ locale, namespace: "settings.sessions" });
+		return { error: t("missingSession") };
 	}
 
 	const result = await authedFetch(`/api/auth/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });

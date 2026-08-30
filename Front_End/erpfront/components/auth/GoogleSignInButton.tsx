@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { signInWithGoogle, type OAuthActionState } from "@/actions/oauth";
 
 const initialState: OAuthActionState = {};
 
-// i18n keys (build-plan 4): continue_with_google, redirecting
 export function GoogleSignInButton() {
+	const t = useTranslations("auth.google");
 	const [state, formAction, pending] = useActionState(signInWithGoogle, initialState);
 
 	return (
@@ -16,8 +17,9 @@ export function GoogleSignInButton() {
 				disabled={pending}
 				className="min-h-11 w-full rounded-[5px] border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold text-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:opacity-55"
 			>
-				{pending ? "Redirecting..." : "Continue with Google"}
+				{pending ? t("redirecting") : t("continue")}
 			</button>
+			{/* state.error is a backend-returned string (see current-feature.md Notes for the AI) - not translated here. */}
 			{state.error && <span className="text-[11px] text-danger">{state.error}</span>}
 		</form>
 	);
