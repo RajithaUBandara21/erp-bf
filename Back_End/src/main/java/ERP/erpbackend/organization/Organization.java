@@ -28,4 +28,7 @@ public class Organization extends AuditableEntity {
 	@Column(nullable = false)
 	private boolean active = true;
 
+	@Column(name = "invite_code")
+	private String inviteCode;
+
 }

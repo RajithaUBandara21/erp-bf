@@ -24,4 +24,10 @@ public class Tenant extends AuditableEntity {
 	@Column(nullable = false)
 	private boolean active = true;
 
+	@Column
+	private String plan;
+
+	@Column(name = "max_organizations", nullable = false)
+	private int maxOrganizations = 1;
+
 }
