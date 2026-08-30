@@ -32,13 +32,23 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request,
+	public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
 			HttpServletRequest servletRequest) {
 		if (!loginRateLimiter.allow(servletRequest.getRemoteAddr())) {
 			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
 					"Too many login attempts. Please try again later.");
 		}
 		return ResponseEntity.ok(authenticationService.login(request));
+	}
+
+	@PostMapping("/login/select")
+	public ResponseEntity<TokenResponse> loginSelect(@Valid @RequestBody LoginSelectRequest request,
+			HttpServletRequest servletRequest) {
+		if (!loginRateLimiter.allow(servletRequest.getRemoteAddr())) {
+			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+					"Too many login attempts. Please try again later.");
+		}
+		return ResponseEntity.ok(authenticationService.selectOrganization(request));
 	}
 
 	@PostMapping("/refresh")

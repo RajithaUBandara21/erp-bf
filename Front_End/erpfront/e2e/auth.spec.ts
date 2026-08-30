@@ -7,7 +7,6 @@ test("sign-in form shows a field error for each empty required field", async ({ 
   await page.goto("/sign-in");
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.getByText("Organization code is required.")).toBeVisible();
   await expect(page.getByText("Email is required.")).toBeVisible();
   await expect(page.getByText("Password is required.")).toBeVisible();
 });

@@ -16,6 +16,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import ERP.erpbackend.common.GlobalExceptionHandler;
 import ERP.erpbackend.common.JpaAuditingConfig;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -311,15 +312,15 @@ class AuthControllerTest {
 	}
 
 	@Test
-	void loginReturnsTokenShapeOnSuccess() throws Exception {
+	void loginReturnsAuthenticatedOutcomeWithTheSessionTokens() throws Exception {
 		TokenResponse tokenResponse = new TokenResponse(
 				"access-token", "refresh-token", 900L, 2592000L,
 				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", "Ada Owner");
-		when(authenticationService.login(any(LoginRequest.class))).thenReturn(tokenResponse);
+		when(authenticationService.login(any(LoginRequest.class)))
+				.thenReturn(LoginResponse.authenticated(tokenResponse));
 
 		String requestBody = """
 				{
-				  "organizationCode": "acme-corp",
 				  "email": "ada@acme.test",
 				  "password": "Sunrise8",
 				  "clientType": "WEB"
@@ -330,15 +331,40 @@ class AuthControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(requestBody))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.accessToken").value("access-token"))
-				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
-				.andExpect(jsonPath("$.expiresIn").value(900))
-				.andExpect(jsonPath("$.refreshExpiresIn").value(2592000))
-				.andExpect(jsonPath("$.userId").value(tokenResponse.userId().toString()))
-				.andExpect(jsonPath("$.tenantId").value(tokenResponse.tenantId().toString()))
-				.andExpect(jsonPath("$.organizationId").value(tokenResponse.organizationId().toString()))
-				.andExpect(jsonPath("$.email").value("ada@acme.test"))
-				.andExpect(jsonPath("$.fullName").value("Ada Owner"));
+				.andExpect(jsonPath("$.outcome").value("AUTHENTICATED"))
+				.andExpect(jsonPath("$.selectionToken").doesNotExist())
+				.andExpect(jsonPath("$.session.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.session.refreshToken").value("refresh-token"))
+				.andExpect(jsonPath("$.session.expiresIn").value(900))
+				.andExpect(jsonPath("$.session.userId").value(tokenResponse.userId().toString()))
+				.andExpect(jsonPath("$.session.email").value("ada@acme.test"));
+	}
+
+	@Test
+	void loginReturnsSelectOrganizationOutcomeWithTokenAndOptions() throws Exception {
+		UUID membershipId = UUID.randomUUID();
+		UUID organizationId = UUID.randomUUID();
+		when(authenticationService.login(any(LoginRequest.class))).thenReturn(LoginResponse.selectOrganization(
+				"selection-token",
+				List.of(new MembershipOption(membershipId, organizationId, "Head Office"))));
+
+		String requestBody = """
+				{
+				  "email": "ada@acme.test",
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
+				}
+				""";
+
+		mockMvc.perform(post("/api/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.outcome").value("SELECT_ORGANIZATION"))
+				.andExpect(jsonPath("$.session").doesNotExist())
+				.andExpect(jsonPath("$.selectionToken").value("selection-token"))
+				.andExpect(jsonPath("$.organizations[0].membershipId").value(membershipId.toString()))
+				.andExpect(jsonPath("$.organizations[0].organizationName").value("Head Office"));
 	}
 
 	@Test
@@ -348,7 +374,6 @@ class AuthControllerTest {
 
 		String requestBody = """
 				{
-				  "organizationCode": "acme-corp",
 				  "email": "ada@acme.test",
 				  "password": "WrongPass9",
 				  "clientType": "WEB"
@@ -363,12 +388,29 @@ class AuthControllerTest {
 	}
 
 	@Test
+	void loginRejectsAMissingEmailWithValidationDetails() throws Exception {
+		String requestBody = """
+				{
+				  "password": "Sunrise8",
+				  "clientType": "WEB"
+				}
+				""";
+
+		mockMvc.perform(post("/api/auth/login")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.email").exists());
+
+		verify(authenticationService, never()).login(any(LoginRequest.class));
+	}
+
+	@Test
 	void loginReturnsTooManyRequestsWhenRateLimitExceeded() throws Exception {
 		when(loginRateLimiter.allow(anyString())).thenReturn(false);
 
 		String requestBody = """
 				{
-				  "organizationCode": "acme-corp",
 				  "email": "ada@acme.test",
 				  "password": "Sunrise8",
 				  "clientType": "WEB"
@@ -382,6 +424,67 @@ class AuthControllerTest {
 				.andExpect(jsonPath("$.message").exists());
 
 		verify(authenticationService, never()).login(any(LoginRequest.class));
+	}
+
+	@Test
+	void loginSelectReturnsTheSessionTokensOnSuccess() throws Exception {
+		TokenResponse tokenResponse = new TokenResponse(
+				"access-token", "refresh-token", 900L, 2592000L,
+				UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", "Ada Owner");
+		when(authenticationService.selectOrganization(any(LoginSelectRequest.class))).thenReturn(tokenResponse);
+
+		String requestBody = """
+				{
+				  "selectionToken": "a-selection-token",
+				  "membershipId": "%s",
+				  "clientType": "WEB"
+				}
+				""".formatted(UUID.randomUUID());
+
+		mockMvc.perform(post("/api/auth/login/select")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+	}
+
+	@Test
+	void loginSelectRejectsAMissingMembershipIdWithValidationDetails() throws Exception {
+		String requestBody = """
+				{
+				  "selectionToken": "a-selection-token",
+				  "clientType": "WEB"
+				}
+				""";
+
+		mockMvc.perform(post("/api/auth/login/select")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.membershipId").exists());
+
+		verify(authenticationService, never()).selectOrganization(any(LoginSelectRequest.class));
+	}
+
+	@Test
+	void loginSelectReturnsTooManyRequestsWhenRateLimitExceeded() throws Exception {
+		when(loginRateLimiter.allow(anyString())).thenReturn(false);
+
+		String requestBody = """
+				{
+				  "selectionToken": "a-selection-token",
+				  "membershipId": "%s",
+				  "clientType": "WEB"
+				}
+				""".formatted(UUID.randomUUID());
+
+		mockMvc.perform(post("/api/auth/login/select")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				.andExpect(status().isTooManyRequests());
+
+		verify(authenticationService, never()).selectOrganization(any(LoginSelectRequest.class));
 	}
 
 	@Test

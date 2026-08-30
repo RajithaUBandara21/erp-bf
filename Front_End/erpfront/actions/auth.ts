@@ -5,7 +5,7 @@ import { redirect } from "@/i18n/navigation";
 import { API_BASE_URL, postJson } from "@/lib/api";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
 import { fetchWithTimeout } from "@/lib/http";
-import type { TokenResponse } from "@/types/auth";
+import type { LoginResponse, MembershipOption, TokenResponse } from "@/types/auth";
 
 // Mirrors the backend's @Pattern on RegisterRequest.password - UX only, the backend stays authoritative.
 const PASSWORD_PATTERN = /^(?=.*[0-9])(?=.*[A-Z]).{8,}$/;
@@ -72,22 +72,25 @@ export interface SignInFormState {
 	error?: string;
 	fieldErrors?: Record<string, string>;
 	values?: {
-		organizationCode: string;
 		email: string;
+	};
+	// Set when the account has several organizations: the sign-in form swaps to the selector step.
+	selection?: {
+		selectionToken: string;
+		organizations: MembershipOption[];
+		remember: boolean;
 	};
 }
 
 // See signUp above for why `locale` is a bound first argument.
 export async function signIn(locale: string, _prevState: SignInFormState, formData: FormData): Promise<SignInFormState> {
-	const organizationCode = String(formData.get("organizationCode") ?? "").trim();
 	const email = String(formData.get("email") ?? "").trim();
 	const password = String(formData.get("password") ?? "");
 	const remember = formData.get("remember") === "on";
-	const values = { organizationCode, email };
+	const values = { email };
 	const t = await getTranslations({ locale, namespace: "auth.signIn" });
 
 	const fieldErrors: Record<string, string> = {};
-	if (!organizationCode) fieldErrors.organizationCode = t("orgCodeRequired");
 	if (!email) fieldErrors.email = t("emailRequired");
 	if (!password) fieldErrors.password = t("passwordRequired");
 	if (Object.keys(fieldErrors).length > 0) {
@@ -95,8 +98,7 @@ export async function signIn(locale: string, _prevState: SignInFormState, formDa
 	}
 
 	// This is the web app - clientType is always WEB here, unlike mobile/desktop clients hitting the same API.
-	const result = await postJson<TokenResponse>("/api/auth/login", {
-		organizationCode,
+	const result = await postJson<LoginResponse>("/api/auth/login", {
 		email,
 		password,
 		clientType: "WEB",
@@ -105,6 +107,50 @@ export async function signIn(locale: string, _prevState: SignInFormState, formDa
 	if (!result.success) {
 		// The backend collapses every login failure into one generic message - never split it back out per field.
 		return { error: result.error, values };
+	}
+
+	if (result.data.outcome === "SELECT_ORGANIZATION") {
+		return {
+			values,
+			selection: {
+				selectionToken: result.data.selectionToken,
+				organizations: result.data.organizations,
+				remember,
+			},
+		};
+	}
+
+	await setAuthCookies(result.data.session, remember);
+	redirect({ href: "/", locale });
+}
+
+export interface SelectOrganizationState {
+	error?: string;
+}
+
+// `locale` and `selectionToken` are bound arguments (see components/auth/SignInForm.tsx).
+export async function selectOrganization(
+	locale: string,
+	selectionToken: string,
+	remember: boolean,
+	_prevState: SelectOrganizationState,
+	formData: FormData,
+): Promise<SelectOrganizationState> {
+	const membershipId = String(formData.get("membershipId") ?? "");
+	const t = await getTranslations({ locale, namespace: "auth.signIn" });
+
+	if (!membershipId) {
+		return { error: t("selectRequired") };
+	}
+
+	const result = await postJson<TokenResponse>("/api/auth/login/select", {
+		selectionToken,
+		membershipId,
+		clientType: "WEB",
+	});
+
+	if (!result.success) {
+		return { error: result.error };
 	}
 
 	await setAuthCookies(result.data, remember);

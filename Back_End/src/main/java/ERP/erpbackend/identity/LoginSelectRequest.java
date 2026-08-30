@@ -1,20 +1,19 @@
 package ERP.erpbackend.identity;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
 
-public record LoginRequest(
+/** Second half of a multi-Organization login: the token from {@code /api/auth/login} plus the chosen Membership. */
+public record LoginSelectRequest(
 
 		@NotBlank
-		@Email
 		@Size(max = 255)
-		String email,
+		String selectionToken,
 
-		@NotBlank
-		@MaxUtf8Bytes(72)
-		String password,
+		@NotNull
+		UUID membershipId,
 
 		@NotNull
 		ClientType clientType

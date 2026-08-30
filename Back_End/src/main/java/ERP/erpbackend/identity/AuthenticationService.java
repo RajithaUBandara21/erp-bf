@@ -2,7 +2,10 @@ package ERP.erpbackend.identity;
 
 import ERP.erpbackend.organization.OrganizationService;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +22,7 @@ public class AuthenticationService {
 
 	// A valid BCrypt hash (strength 10, matching BCryptPasswordEncoder's default) of a throwaway
 	// value. Compared against when no user matches so every login path runs one full hash comparison
-	// and response time can't be used to enumerate valid org codes or emails (F-09).
+	// and response time can't be used to enumerate valid emails (F-09).
 	private static final String DUMMY_PASSWORD_HASH =
 			"$2a$10$rj1PzUggzShtDluMqkrXZ.JRijLCAjBsdaPs5nbO6M66EzAE2gyS2";
 
@@ -32,9 +35,9 @@ public class AuthenticationService {
 	private final RefreshTokenService refreshTokenService;
 	private final SessionTokenIssuer sessionTokenIssuer;
 	private final RevokedSessionRegistry revokedSessionRegistry;
+	private final LoginSelectionService loginSelectionService;
 
-	public TokenResponse login(LoginRequest request) {
-		Optional<UUID> tenantId = organizationService.findTenantIdByCode(normalize(request.organizationCode()));
+	public LoginResponse login(LoginRequest request) {
 		Optional<User> user = userRepository.findByEmail(request.email().toLowerCase(Locale.ROOT));
 
 		// Run one hash comparison on every path, matched or not, falling back to a fixed dummy hash
@@ -47,13 +50,38 @@ public class AuthenticationService {
 			throw invalidCredentials();
 		}
 
-		Membership membership = tenantId
-				.flatMap(id -> membershipRepository.findByUserIdAndTenantIdAndStatus(
-						user.get().getId(), id, MembershipStatus.ACTIVE))
+		// A person with no ACTIVE Membership (all PENDING, or none) is turned away with the same
+		// generic message as a bad password - login must not leak that the account exists.
+		List<Membership> memberships = membershipRepository.findByUserIdAndStatus(
+				user.get().getId(), MembershipStatus.ACTIVE);
+		if (memberships.isEmpty()) {
+			throw invalidCredentials();
+		}
+		if (memberships.size() == 1) {
+			return LoginResponse.authenticated(
+					issueForMembership(user.get(), memberships.getFirst(), request.clientType()));
+		}
+
+		String selectionToken = loginSelectionService.issue(user.get().getId());
+		return LoginResponse.selectOrganization(selectionToken, toOptions(memberships));
+	}
+
+	public TokenResponse selectOrganization(LoginSelectRequest request) {
+		UUID userId = loginSelectionService.consume(request.selectionToken())
 				.orElseThrow(AuthenticationService::invalidCredentials);
 
-		Session session = sessionTokenIssuer.createSession(user.get(), membership, request.clientType());
-		return sessionTokenIssuer.issueTokens(user.get(), membership, session);
+		User user = userRepository.findById(userId)
+				.filter(User::isActive)
+				.orElseThrow(AuthenticationService::invalidCredentials);
+
+		// Re-resolve ACTIVE Memberships now: the token carries only the userId, so a Membership that
+		// went PENDING or was removed since login must not still be selectable.
+		Membership membership = membershipRepository.findByUserIdAndStatus(userId, MembershipStatus.ACTIVE).stream()
+				.filter(candidate -> candidate.getId().equals(request.membershipId()))
+				.findFirst()
+				.orElseThrow(AuthenticationService::invalidCredentials);
+
+		return issueForMembership(user, membership, request.clientType());
 	}
 
 	public TokenResponse refresh(RefreshRequest request) {
@@ -89,12 +117,23 @@ public class AuthenticationService {
 				});
 	}
 
-	private static boolean isUsable(Session session) {
-		return session.getRevokedAt() == null && session.getExpiresAt().isAfter(Instant.now());
+	private TokenResponse issueForMembership(User user, Membership membership, ClientType clientType) {
+		Session session = sessionTokenIssuer.createSession(user, membership, clientType);
+		return sessionTokenIssuer.issueTokens(user, membership, session);
 	}
 
-	private static String normalize(String value) {
-		return value.trim().toLowerCase(Locale.ROOT);
+	private List<MembershipOption> toOptions(List<Membership> memberships) {
+		Map<UUID, String> names = organizationService.findNamesByIds(
+				memberships.stream().map(Membership::getOrganizationId).toList());
+		return memberships.stream()
+				.map(membership -> new MembershipOption(membership.getId(), membership.getOrganizationId(),
+						names.getOrDefault(membership.getOrganizationId(), "")))
+				.sorted(Comparator.comparing(MembershipOption::organizationName, String.CASE_INSENSITIVE_ORDER))
+				.toList();
+	}
+
+	private static boolean isUsable(Session session) {
+		return session.getRevokedAt() == null && session.getExpiresAt().isAfter(Instant.now());
 	}
 
 	private static ResponseStatusException invalidCredentials() {

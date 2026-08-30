@@ -52,7 +52,6 @@
 		"signIn": {
 			"title": "පුරන්න",
 			"description": "ඔබගේ Universal ERP වැඩබිමට පුරන්න",
-			"orgCodeLabel": "සංවිධාන කේතය",
 			"emailLabel": "විද්‍යුත් තැපෑල",
 			"passwordLabel": "මුරපදය",
 			"rememberMe": "මාව මතක තබාගන්න",
@@ -61,9 +60,12 @@
 			"orDivider": "හෝ",
 			"noAccount": "ගිණුමක් නැද්ද?",
 			"createWorkspace": "ඔබේ වැඩබිම සාදන්න",
-			"orgCodeRequired": "සංවිධාන කේතය අවශ්‍යයි.",
 			"emailRequired": "විද්‍යුත් තැපෑල අවශ්‍යයි.",
-			"passwordRequired": "මුරපදය අවශ්‍යයි."
+			"passwordRequired": "මුරපදය අවශ්‍යයි.",
+			"selectPrompt": "ඔබගේ ගිණුම සංවිධාන කිහිපයකට අයත් වේ. පුරන්නට සංවිධානය තෝරන්න.",
+			"selectSubmit": "ඉදිරියට",
+			"selectSubmitting": "පුරමින්...",
+			"selectRequired": "ඉදිරියට යාමට සංවිධානයක් තෝරන්න."
 		},
 		"signUp": {
 			"title": "ඔබේ වැඩබිම සාදන්න",

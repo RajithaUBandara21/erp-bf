@@ -4,8 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ERP.erpbackend.TestcontainersConfiguration;
-import ERP.erpbackend.organization.Tenant;
-import ERP.erpbackend.organization.TenantRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,25 +37,20 @@ class SessionRevocationEnforcementTest {
 	@Autowired
 	private JwtService jwtService;
 
-	@Autowired
-	private TenantRepository tenantRepository;
-
-	private record Device(String organizationCode, String accessToken, AuthenticatedUser user) {
+	private record Device(String accessToken, AuthenticatedUser user) {
 	}
 
 	private Device register(String email) {
 		TokenResponse response = registrationService.register(
 				new RegisterRequest("Acme Corp " + email, "Ada Owner", email, PASSWORD, ClientType.WEB));
-		Tenant tenant = tenantRepository.findById(response.tenantId()).orElseThrow();
-		return new Device(tenant.getCode(), response.accessToken(),
+		return new Device(response.accessToken(),
 				jwtService.parseAccessToken(response.accessToken()).orElseThrow());
 	}
 
-	private Device login(String organizationCode, String email) {
-		TokenResponse response = authenticationService.login(
-				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
-		return new Device(organizationCode, response.accessToken(),
-				jwtService.parseAccessToken(response.accessToken()).orElseThrow());
+	private Device login(String email) {
+		LoginResponse response = authenticationService.login(new LoginRequest(email, PASSWORD, ClientType.WEB));
+		return new Device(response.session().accessToken(),
+				jwtService.parseAccessToken(response.session().accessToken()).orElseThrow());
 	}
 
 	private void expectSessions(String accessToken, int expectedStatus) throws Exception {
@@ -80,8 +73,8 @@ class SessionRevocationEnforcementTest {
 	void revokeOthersBlocksEveryOtherDeviceButKeepsTheCallersOwnTokenWorking() throws Exception {
 		String email = "revoke-others-access@acme.test";
 		Device registration = register(email);
-		Device otherDevice = login(registration.organizationCode(), email);
-		Device caller = login(registration.organizationCode(), email);
+		Device otherDevice = login(email);
+		Device caller = login(email);
 
 		sessionService.revokeOtherSessions(caller.user());
 

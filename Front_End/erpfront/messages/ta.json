@@ -52,7 +52,6 @@
 		"signIn": {
 			"title": "உள்நுழையவும்",
 			"description": "உங்கள் Universal ERP பணியிடத்திற்கு உள்நுழையவும்",
-			"orgCodeLabel": "நிறுவனக் குறியீடு",
 			"emailLabel": "மின்னஞ்சல்",
 			"passwordLabel": "கடவுச்சொல்",
 			"rememberMe": "என்னை நினைவில் கொள்",
@@ -61,9 +60,12 @@
 			"orDivider": "அல்லது",
 			"noAccount": "கணக்கு இல்லையா?",
 			"createWorkspace": "உங்கள் பணியிடத்தை உருவாக்கவும்",
-			"orgCodeRequired": "நிறுவனக் குறியீடு தேவை.",
 			"emailRequired": "மின்னஞ்சல் தேவை.",
-			"passwordRequired": "கடவுச்சொல் தேவை."
+			"passwordRequired": "கடவுச்சொல் தேவை.",
+			"selectPrompt": "உங்கள் கணக்கு ஒன்றுக்கு மேற்பட்ட நிறுவனங்களைச் சேர்ந்தது. உள்நுழைய வேண்டிய நிறுவனத்தைத் தேர்ந்தெடுக்கவும்.",
+			"selectSubmit": "தொடரவும்",
+			"selectSubmitting": "உள்நுழைகிறது...",
+			"selectRequired": "தொடர ஒரு நிறுவனத்தைத் தேர்ந்தெடுக்கவும்."
 		},
 		"signUp": {
 			"title": "உங்கள் பணியிடத்தை உருவாக்கவும்",

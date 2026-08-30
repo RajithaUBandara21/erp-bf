@@ -12,6 +12,21 @@ export interface TokenResponse {
 	fullName: string;
 }
 
+/** One Organization offered during the two-step login (`POST /api/auth/login` -> `SELECT_ORGANIZATION`). */
+export interface MembershipOption {
+	membershipId: string;
+	organizationId: string;
+	organizationName: string;
+}
+
+/**
+ * Result of `POST /api/auth/login`. `AUTHENTICATED` carries the issued `session`; `SELECT_ORGANIZATION`
+ * carries a single-use `selectionToken` and the Organizations to choose between, with no session yet.
+ */
+export type LoginResponse =
+	| { outcome: "AUTHENTICATED"; session: TokenResponse; selectionToken: null; organizations: null }
+	| { outcome: "SELECT_ORGANIZATION"; session: null; selectionToken: string; organizations: MembershipOption[] };
+
 export interface ErrorResponse {
 	message: string;
 	errors: Record<string, string>;

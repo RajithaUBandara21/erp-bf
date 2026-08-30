@@ -52,7 +52,6 @@
 		"signIn": {
 			"title": "Sign in",
 			"description": "Sign in to your Universal ERP workspace",
-			"orgCodeLabel": "Organization code",
 			"emailLabel": "Email",
 			"passwordLabel": "Password",
 			"rememberMe": "Remember me",
@@ -61,9 +60,12 @@
 			"orDivider": "or",
 			"noAccount": "Don''t have an account?",
 			"createWorkspace": "Create your workspace",
-			"orgCodeRequired": "Organization code is required.",
 			"emailRequired": "Email is required.",
-			"passwordRequired": "Password is required."
+			"passwordRequired": "Password is required.",
+			"selectPrompt": "Your account belongs to more than one organization. Choose the one to sign in to.",
+			"selectSubmit": "Continue",
+			"selectSubmitting": "Signing in...",
+			"selectRequired": "Select an organization to continue."
 		},
 		"signUp": {
 			"title": "Create your workspace",
