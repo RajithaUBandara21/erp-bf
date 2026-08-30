@@ -236,5 +236,52 @@
 			"organization": "Organization",
 			"billing": "Billing & plan"
 		}
+	},
+	"auditLog": {
+		"title": "Audit logs",
+		"intro": "Every recorded action across identity, security, and business data - who did what, when, and what changed.",
+		"forbidden": "You don''t have access to audit logs. Ask an administrator if you need it.",
+		"loadError": "We couldn''t load audit logs right now. Please refresh to try again.",
+		"filters": {
+			"entityTypeLabel": "Entity type",
+			"entityTypePlaceholder": "e.g. Role",
+			"actionLabel": "Action",
+			"actionPlaceholder": "e.g. role.created",
+			"actorLabel": "Actor",
+			"allActors": "All actors",
+			"fromLabel": "From",
+			"toLabel": "To",
+			"apply": "Apply filters",
+			"clear": "Clear"
+		},
+		"table": {
+			"timestampCol": "Timestamp",
+			"actorCol": "Actor",
+			"entityCol": "Entity",
+			"actionCol": "Action",
+			"organizationCol": "Organization",
+			"unknownActor": "Unknown",
+			"empty": "No audit log entries match your filters."
+		},
+		"pagination": {
+			"showing": "Showing {start}-{end} of {total}",
+			"previous": "Previous",
+			"next": "Next"
+		},
+		"detail": {
+			"ariaLabel": "Audit entry details",
+			"title": "Change details",
+			"close": "Close",
+			"timestampLabel": "Timestamp",
+			"actorLabel": "Actor",
+			"entityLabel": "Entity",
+			"actionLabel": "Action",
+			"organizationLabel": "Organization",
+			"fieldCol": "Field",
+			"beforeCol": "Before",
+			"afterCol": "After",
+			"noFieldsRecorded": "No fields recorded for this action.",
+			"unknownActor": "Unknown"
+		}
 	}
 }

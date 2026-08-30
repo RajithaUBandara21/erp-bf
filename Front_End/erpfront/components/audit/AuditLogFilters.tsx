@@ -2,6 +2,7 @@
 
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import type { AuditLogQueryParams } from "@/types/audit";
 import type { UserSummary } from "@/types/roles";
@@ -17,8 +18,6 @@ export interface AuditLogFilterValues {
 
 const EMPTY_FILTERS: AuditLogFilterValues = { entityType: "", action: "", actorId: "", from: "", to: "" };
 
-// i18n keys (build-plan 4): entity_type_filter_label, action_filter_label, actor_filter_label,
-// date_from, date_to, apply_filters, clear_filters, all_actors
 export function AuditLogFilters({
 	initialFilters,
 	actors,
@@ -26,6 +25,7 @@ export function AuditLogFilters({
 	initialFilters: AuditLogFilterValues;
 	actors: UserSummary[];
 }) {
+	const t = useTranslations("auditLog.filters");
 	const router = useRouter();
 	const [values, setValues] = useState(initialFilters);
 	const hasActiveFilters = Object.values(initialFilters).some((value) => value !== "");
@@ -53,31 +53,31 @@ export function AuditLogFilters({
 
 	return (
 		<form onSubmit={onSubmit} className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-			<Field label="Entity type">
+			<Field label={t("entityTypeLabel")}>
 				<input
 					type="text"
 					value={values.entityType}
 					onChange={set("entityType")}
-					placeholder="e.g. Role"
+					placeholder={t("entityTypePlaceholder")}
 					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-36"
 				/>
 			</Field>
-			<Field label="Action">
+			<Field label={t("actionLabel")}>
 				<input
 					type="text"
 					value={values.action}
 					onChange={set("action")}
-					placeholder="e.g. role.created"
+					placeholder={t("actionPlaceholder")}
 					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-40"
 				/>
 			</Field>
-			<Field label="Actor">
+			<Field label={t("actorLabel")}>
 				<select
 					value={values.actorId}
 					onChange={set("actorId")}
 					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-44"
 				>
-					<option value="">All actors</option>
+					<option value="">{t("allActors")}</option>
 					{actors.map((actor) => (
 						<option key={actor.id} value={actor.id}>
 							{actor.fullName}
@@ -85,7 +85,7 @@ export function AuditLogFilters({
 					))}
 				</select>
 			</Field>
-			<Field label="From">
+			<Field label={t("fromLabel")}>
 				<input
 					type="date"
 					value={values.from}
@@ -93,7 +93,7 @@ export function AuditLogFilters({
 					className="min-h-9 w-full rounded-[5px] border border-border bg-bg px-2.5 py-1.5 text-[13px] text-text focus:border-accent focus:outline-none sm:w-auto"
 				/>
 			</Field>
-			<Field label="To">
+			<Field label={t("toLabel")}>
 				<input
 					type="date"
 					value={values.to}
@@ -105,7 +105,7 @@ export function AuditLogFilters({
 				type="submit"
 				className="min-h-9 rounded-[5px] bg-accent px-3.5 py-1.5 text-[13px] font-semibold text-accent-ink hover:bg-accent-hover"
 			>
-				Apply filters
+				{t("apply")}
 			</button>
 			{hasActiveFilters && (
 				<button
@@ -113,7 +113,7 @@ export function AuditLogFilters({
 					onClick={onClear}
 					className="min-h-9 rounded-[5px] border border-border bg-surface px-3.5 py-1.5 text-[13px] font-semibold text-text hover:bg-surface-alt"
 				>
-					Clear
+					{t("clear")}
 				</button>
 			)}
 		</form>

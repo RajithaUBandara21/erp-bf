@@ -236,5 +236,52 @@
 			"organization": "සංවිධානය",
 			"billing": "බිල්පත් සහ සැලැස්ම"
 		}
+	},
+	"auditLog": {
+		"title": "විගණන සටහන්",
+		"intro": "අනන්‍යතාව, ආරක්ෂාව සහ ව්‍යාපාරික දත්ත හරහා වාර්තා කරන ලද සෑම ක්‍රියාවක්ම - කවුරුන් කුමක් කළේද, කවදාද, සහ කුමක් වෙනස් වූයේද.",
+		"forbidden": "ඔබට විගණන සටහන් වෙත ප්‍රවේශය නැත. අවශ්‍ය නම් පරිපාලකයෙකුගෙන් විමසන්න.",
+		"loadError": "අපට දැන් විගණන සටහන් පූරණය කළ නොහැකි විය. නැවත උත්සාහ කිරීමට පිටුව නැවුම් කරන්න.",
+		"filters": {
+			"entityTypeLabel": "වස්තු වර්ගය",
+			"entityTypePlaceholder": "උදා. Role",
+			"actionLabel": "ක්‍රියාව",
+			"actionPlaceholder": "උදා. role.created",
+			"actorLabel": "ක්‍රියාකරු",
+			"allActors": "සියලුම ක්‍රියාකරුවන්",
+			"fromLabel": "සිට",
+			"toLabel": "දක්වා",
+			"apply": "පෙරහන් යොදන්න",
+			"clear": "හිස් කරන්න"
+		},
+		"table": {
+			"timestampCol": "වේලා මුද්‍රාව",
+			"actorCol": "ක්‍රියාකරු",
+			"entityCol": "වස්තුව",
+			"actionCol": "ක්‍රියාව",
+			"organizationCol": "සංවිධානය",
+			"unknownActor": "නොදන්නා",
+			"empty": "ඔබගේ පෙරහන් වලට ගැලපෙන විගණන සටහන් නොමැත."
+		},
+		"pagination": {
+			"showing": "{total} න් {start}-{end} පෙන්වමින්",
+			"previous": "පෙර",
+			"next": "ඊළඟ"
+		},
+		"detail": {
+			"ariaLabel": "විගණන සටහන් විස්තර",
+			"title": "වෙනස්කම් විස්තර",
+			"close": "වසන්න",
+			"timestampLabel": "වේලා මුද්‍රාව",
+			"actorLabel": "ක්‍රියාකරු",
+			"entityLabel": "වස්තුව",
+			"actionLabel": "ක්‍රියාව",
+			"organizationLabel": "සංවිධානය",
+			"fieldCol": "ක්ෂේත්‍රය",
+			"beforeCol": "පෙර",
+			"afterCol": "පසු",
+			"noFieldsRecorded": "මෙම ක්‍රියාව සඳහා ක්ෂේත්‍ර කිසිවක් වාර්තා වී නැත.",
+			"unknownActor": "නොදන්නා"
+		}
 	}
 }

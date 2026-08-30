@@ -1,4 +1,4 @@
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { authedFetch } from "@/lib/api";
 import { buildAuditLogQuery } from "@/lib/audit-log";
@@ -17,12 +17,12 @@ interface AuditLogSearchParams {
 	page?: string;
 }
 
-// i18n keys (build-plan 4): audit_log_title, audit_log_intro, audit_log_forbidden, audit_log_load_error
 export default async function AuditLogViewerPage({
 	searchParams,
 }: {
 	searchParams: Promise<AuditLogSearchParams>;
 }) {
+	const t = await getTranslations("auditLog");
 	const params = await searchParams;
 	const requestedPage = Number(params.page);
 	const page = Number.isInteger(requestedPage) && requestedPage >= 0 ? requestedPage : undefined;
@@ -58,11 +58,8 @@ export default async function AuditLogViewerPage({
 	return (
 		<div>
 			<div className="mb-6">
-				<h1 className="text-xl font-semibold">Audit logs</h1>
-				<p className="mt-1 text-[13px] text-muted">
-					Every recorded action across identity, security, and business data - who did what, when, and
-					what changed.
-				</p>
+				<h1 className="text-xl font-semibold">{t("title")}</h1>
+				<p className="mt-1 text-[13px] text-muted">{t("intro")}</p>
 			</div>
 
 			{result.success && <AuditLogFilters initialFilters={filterValues} actors={actors} />}
@@ -80,9 +77,7 @@ export default async function AuditLogViewerPage({
 				</>
 			) : (
 				<div className="rounded-lg border border-border bg-surface p-6 text-[13px] text-muted shadow-sm">
-					{forbidden
-						? "You don't have access to audit logs. Ask an administrator if you need it."
-						: "We couldn't load audit logs right now. Please refresh to try again."}
+					{forbidden ? t("forbidden") : t("loadError")}
 				</div>
 			)}
 		</div>

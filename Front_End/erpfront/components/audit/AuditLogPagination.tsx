@@ -1,8 +1,9 @@
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import type { AuditLogQueryParams } from "@/types/audit";
 import { buildAuditLogQuery } from "@/lib/audit-log";
 
-export function AuditLogPagination({
+export async function AuditLogPagination({
 	page,
 	size,
 	totalElements,
@@ -17,6 +18,8 @@ export function AuditLogPagination({
 }) {
 	if (totalElements === 0) return null;
 
+	const t = await getTranslations("auditLog.pagination");
+
 	const rangeStart = page * size + 1;
 	const rangeEnd = page * size + currentCount;
 	const hasPrevious = page > 0;
@@ -29,14 +32,14 @@ export function AuditLogPagination({
 	return (
 		<div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-[13px]">
 			<span className="text-muted">
-				Showing {rangeStart}-{rangeEnd} of {totalElements}
+				{t("showing", { start: rangeStart, end: rangeEnd, total: totalElements })}
 			</span>
 			<div className="flex gap-2">
 				<PageLink href={href(page - 1)} disabled={!hasPrevious}>
-					Previous
+					{t("previous")}
 				</PageLink>
 				<PageLink href={href(page + 1)} disabled={!hasNext}>
-					Next
+					{t("next")}
 				</PageLink>
 			</div>
 		</div>

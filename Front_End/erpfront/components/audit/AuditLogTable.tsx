@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { AuditLogEntry } from "@/types/audit";
 import { AuditActionBadge } from "@/components/audit/AuditActionBadge";
 import { AuditLogDetailPanel } from "@/components/audit/AuditLogDetailPanel";
 import { formatAbsoluteDate } from "@/lib/format-time";
 
-// i18n keys (build-plan 4): timestamp_col, actor_col, entity_col, action_col, organization_col,
-// unknown_actor, audit_log_empty
 export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
+	const t = useTranslations("auditLog.table");
 	const [selected, setSelected] = useState<AuditLogEntry | null>(null);
 
 	if (entries.length === 0) {
 		return (
 			<div className="rounded-lg border border-border bg-surface p-6 text-[13px] text-muted shadow-sm">
-				No audit log entries match your filters.
+				{t("empty")}
 			</div>
 		);
 	}
@@ -24,11 +24,11 @@ export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
 			<table className="w-full min-w-160 border-collapse text-[13px] sm:min-w-0">
 				<thead>
 					<tr className="border-b border-border bg-surface-alt text-left text-[11px] font-bold uppercase tracking-wide text-muted">
-						<th className="p-3">Timestamp</th>
-						<th className="p-3">Actor</th>
-						<th className="p-3">Entity</th>
-						<th className="p-3">Action</th>
-						<th className="p-3">Organization</th>
+						<th className="p-3">{t("timestampCol")}</th>
+						<th className="p-3">{t("actorCol")}</th>
+						<th className="p-3">{t("entityCol")}</th>
+						<th className="p-3">{t("actionCol")}</th>
+						<th className="p-3">{t("organizationCol")}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -40,7 +40,7 @@ export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
 						>
 							<td className="whitespace-nowrap p-3 text-xs text-muted">{formatAbsoluteDate(entry.createdAt)}</td>
 							<td className="p-3">
-								<div className="font-semibold text-text">{entry.actorName ?? "Unknown"}</div>
+								<div className="font-semibold text-text">{entry.actorName ?? t("unknownActor")}</div>
 								{entry.actorEmail && <div className="text-xs text-muted">{entry.actorEmail}</div>}
 							</td>
 							<td className="p-3">

@@ -236,5 +236,52 @@
 			"organization": "நிறுவனம்",
 			"billing": "பில்லிங் & திட்டம்"
 		}
+	},
+	"auditLog": {
+		"title": "தணிக்கை பதிவுகள்",
+		"intro": "அடையாளம், பாதுகாப்பு மற்றும் வணிகத் தரவு முழுவதும் பதிவுசெய்யப்பட்ட ஒவ்வொரு செயலும் - யார் என்ன செய்தார்கள், எப்போது, ​​என்ன மாற்றப்பட்டது.",
+		"forbidden": "தணிக்கை பதிவுகளுக்கு உங்களுக்கு அணுகல் இல்லை. தேவைப்பட்டால் நிர்வாகியிடம் கேளுங்கள்.",
+		"loadError": "எங்களால் இப்போது தணிக்கை பதிவுகளை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்க பக்கத்தைப் புதுப்பிக்கவும்.",
+		"filters": {
+			"entityTypeLabel": "வகைப் பெயர்",
+			"entityTypePlaceholder": "எ.கா. Role",
+			"actionLabel": "செயல்",
+			"actionPlaceholder": "எ.கா. role.created",
+			"actorLabel": "செயலாளர்",
+			"allActors": "அனைத்து செயலாளர்களும்",
+			"fromLabel": "இருந்து",
+			"toLabel": "வரை",
+			"apply": "வடிகட்டிகளைப் பயன்படுத்து",
+			"clear": "அழி"
+		},
+		"table": {
+			"timestampCol": "நேரமுத்திரை",
+			"actorCol": "செயலாளர்",
+			"entityCol": "வகை",
+			"actionCol": "செயல்",
+			"organizationCol": "நிறுவனம்",
+			"unknownActor": "தெரியாதது",
+			"empty": "உங்கள் வடிகட்டிகளுக்குப் பொருந்தும் தணிக்கை பதிவுகள் இல்லை."
+		},
+		"pagination": {
+			"showing": "{total} இல் {start}-{end} காட்டப்படுகிறது",
+			"previous": "முந்தைய",
+			"next": "அடுத்து"
+		},
+		"detail": {
+			"ariaLabel": "தணிக்கைப் பதிவு விவரங்கள்",
+			"title": "மாற்ற விவரங்கள்",
+			"close": "மூடு",
+			"timestampLabel": "நேரமுத்திரை",
+			"actorLabel": "செயலாளர்",
+			"entityLabel": "வகை",
+			"actionLabel": "செயல்",
+			"organizationLabel": "நிறுவனம்",
+			"fieldCol": "புலம்",
+			"beforeCol": "முன்",
+			"afterCol": "பின்",
+			"noFieldsRecorded": "இந்தச் செயலுக்கு எந்தப் புலங்களும் பதிவு செய்யப்படவில்லை.",
+			"unknownActor": "தெரியாதது"
+		}
 	}
 }
