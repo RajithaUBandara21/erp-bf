@@ -178,4 +178,47 @@ class OrganizationServiceImplTest {
 		assertThat(organizationService.findTenantId(organizationId)).isEmpty();
 	}
 
+	@Test
+	void findActiveByTenantIdsMapsWhateverTheActiveOnlyQueryReturns() {
+		UUID tenantId = UUID.randomUUID();
+		Organization organization = organizationWith(UUID.randomUUID(), "Head Office");
+		organization.setTenantId(tenantId);
+		when(organizationRepository.findByTenantIdInAndActiveTrue(Set.of(tenantId)))
+				.thenReturn(List.of(organization));
+
+		List<OrganizationSummary> result = organizationService.findActiveByTenantIds(Set.of(tenantId));
+
+		assertThat(result).singleElement().satisfies(summary -> {
+			assertThat(summary.id()).isEqualTo(organization.getId());
+			assertThat(summary.tenantId()).isEqualTo(tenantId);
+			assertThat(summary.name()).isEqualTo("Head Office");
+		});
+	}
+
+	@Test
+	void findActiveByTenantIdsShortCircuitsOnEmptyInputWithoutQuerying() {
+		assertThat(organizationService.findActiveByTenantIds(Set.of())).isEmpty();
+		verifyNoInteractions(organizationRepository);
+	}
+
+	@Test
+	void findTenantNamesByIdsKeysNamesByIdAndOmitsUnknownIds() {
+		UUID existingId = UUID.randomUUID();
+		UUID deletedId = UUID.randomUUID();
+		Tenant tenant = new Tenant();
+		tenant.setName("Acme Corp");
+		ReflectionTestUtils.setField(tenant, "id", existingId);
+		when(tenantRepository.findAllById(Set.of(existingId, deletedId))).thenReturn(List.of(tenant));
+
+		Map<UUID, String> names = organizationService.findTenantNamesByIds(Set.of(existingId, deletedId));
+
+		assertThat(names).containsOnlyKeys(existingId).containsEntry(existingId, "Acme Corp");
+	}
+
+	@Test
+	void findTenantNamesByIdsShortCircuitsOnEmptyInputWithoutQuerying() {
+		assertThat(organizationService.findTenantNamesByIds(Set.of())).isEmpty();
+		verifyNoInteractions(tenantRepository);
+	}
+
 }

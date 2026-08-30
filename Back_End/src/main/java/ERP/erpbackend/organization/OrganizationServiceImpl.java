@@ -1,6 +1,7 @@
 package ERP.erpbackend.organization;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +54,26 @@ public class OrganizationServiceImpl implements OrganizationService {
 	@Override
 	public Optional<UUID> findTenantId(UUID organizationId) {
 		return organizationRepository.findById(organizationId).map(Organization::getTenantId);
+	}
+
+	@Override
+	public List<OrganizationSummary> findActiveByTenantIds(Collection<UUID> tenantIds) {
+		if (tenantIds.isEmpty()) {
+			return List.of();
+		}
+		return organizationRepository.findByTenantIdInAndActiveTrue(tenantIds).stream()
+				.map(organization -> new OrganizationSummary(
+						organization.getId(), organization.getTenantId(), organization.getName()))
+				.toList();
+	}
+
+	@Override
+	public Map<UUID, String> findTenantNamesByIds(Collection<UUID> tenantIds) {
+		if (tenantIds.isEmpty()) {
+			return Map.of();
+		}
+		return tenantRepository.findAllById(tenantIds).stream()
+				.collect(Collectors.toMap(Tenant::getId, Tenant::getName));
 	}
 
 	private String uniqueCodeFor(String organizationName) {
