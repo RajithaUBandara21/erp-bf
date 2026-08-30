@@ -66,6 +66,9 @@ class GoogleOAuthControllerTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private MembershipRepository membershipRepository;
+
+	@Autowired
 	private OAuthAccountRepository oAuthAccountRepository;
 
 	@Autowired
@@ -91,9 +94,15 @@ class GoogleOAuthControllerTest {
 		return userRepository.findById(account.userId()).orElseThrow();
 	}
 
-	private static Authentication authenticationFor(User user) {
+	private Membership membershipOf(User user) {
+		return membershipRepository.findByUserId(user.getId()).getFirst();
+	}
+
+	private Authentication authenticationFor(User user) {
+		Membership membership = membershipOf(user);
 		AuthenticatedUser principal = new AuthenticatedUser(
-				user.getId(), user.getTenantId(), user.getOrganizationId(), user.getEmail(), UUID.randomUUID());
+				user.getId(), membership.getTenantId(), membership.getOrganizationId(), user.getEmail(),
+				UUID.randomUUID(), membership.getId());
 		return new UsernamePasswordAuthenticationToken(
 				principal, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
 	}
@@ -104,7 +113,7 @@ class GoogleOAuthControllerTest {
 
 	private void linkUser(User user, String providerUserId, String providerEmail) {
 		OAuthAccount account = new OAuthAccount();
-		account.setTenantId(user.getTenantId());
+		account.setTenantId(membershipOf(user).getTenantId());
 		account.setUserId(user.getId());
 		account.setProvider(OAuthProvider.GOOGLE);
 		account.setProviderUserId(providerUserId);
@@ -204,7 +213,7 @@ class GoogleOAuthControllerTest {
 				.andExpect(header().string("Location", FRONTEND_BASE_URL + "/settings?oauth=linked"));
 
 		OAuthAccount account = oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(user.getTenantId(), user.getId(), OAuthProvider.GOOGLE)
+				.findByTenantIdAndUserIdAndProvider(membershipOf(user).getTenantId(), user.getId(), OAuthProvider.GOOGLE)
 				.orElseThrow();
 		assertThat(account.getProviderUserId()).isEqualTo("round-trip-sub");
 
@@ -224,7 +233,7 @@ class GoogleOAuthControllerTest {
 						.content("{ \"code\": \"" + exchangeCode + "\" }"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.userId").value(user.getId().toString()))
-				.andExpect(jsonPath("$.tenantId").value(user.getTenantId().toString()));
+				.andExpect(jsonPath("$.tenantId").value(membershipOf(user).getTenantId().toString()));
 
 		mockMvc.perform(post("/api/auth/oauth/google/exchange")
 						.contentType("application/json")

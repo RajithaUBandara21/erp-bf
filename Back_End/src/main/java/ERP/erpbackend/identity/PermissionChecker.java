@@ -17,7 +17,7 @@ public class PermissionChecker {
 		if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser user)) {
 			return false;
 		}
-		return resolver.resolve(user.userId(), user.tenantId()).contains(code);
+		return resolver.resolve(user.membershipId()).contains(code);
 	}
 
 }

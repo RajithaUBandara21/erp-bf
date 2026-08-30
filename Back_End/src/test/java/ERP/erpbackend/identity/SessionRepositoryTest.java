@@ -31,6 +31,9 @@ class SessionRepositoryTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private MembershipRepository membershipRepository;
+
+	@Autowired
 	private SessionRepository sessionRepository;
 
 	private Tenant newTenant(String code) {
@@ -48,21 +51,29 @@ class SessionRepositoryTest {
 		return organizationRepository.saveAndFlush(organization);
 	}
 
-	private User newUser(Tenant tenant, Organization organization, String email) {
+	private User newUser(String email) {
 		User user = new User();
-		user.setTenantId(tenant.getId());
-		user.setOrganizationId(organization.getId());
 		user.setEmail(email);
 		user.setPasswordHash("hashed-password");
 		user.setFullName("Session Owner");
 		return userRepository.saveAndFlush(user);
 	}
 
+	private Membership newMembership(Tenant tenant, Organization organization, User user) {
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(tenant.getId());
+		membership.setOrganizationId(organization.getId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		return membershipRepository.saveAndFlush(membership);
+	}
+
 	@Test
 	void savesAndFindsSessionWithAllFieldsAndAuditTimestampsIntact() {
 		Tenant tenant = newTenant("TEN-SES-1");
 		Organization organization = newOrganization(tenant, "ORG-SES-1");
-		User user = newUser(tenant, organization, "owner@acme.test");
+		User user = newUser("owner@acme.test");
+		Membership membership = newMembership(tenant, organization, user);
 
 		Instant lastUsedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 		Instant expiresAt = lastUsedAt.plusSeconds(3600);
@@ -70,6 +81,7 @@ class SessionRepositoryTest {
 		Session session = new Session();
 		session.setTenantId(tenant.getId());
 		session.setUserId(user.getId());
+		session.setMembershipId(membership.getId());
 		session.setClientType(ClientType.WEB);
 		session.setLastUsedAt(lastUsedAt);
 		session.setExpiresAt(expiresAt);
@@ -79,6 +91,7 @@ class SessionRepositoryTest {
 		Session found = sessionRepository.findById(saved.getId()).orElseThrow();
 		assertThat(found.getTenantId()).isEqualTo(tenant.getId());
 		assertThat(found.getUserId()).isEqualTo(user.getId());
+		assertThat(found.getMembershipId()).isEqualTo(membership.getId());
 		assertThat(found.getClientType()).isEqualTo(ClientType.WEB);
 		assertThat(found.getLastUsedAt()).isEqualTo(lastUsedAt);
 		assertThat(found.getExpiresAt()).isEqualTo(expiresAt);
@@ -91,13 +104,15 @@ class SessionRepositoryTest {
 	void savesAndFindsRevokedSession() {
 		Tenant tenant = newTenant("TEN-SES-2");
 		Organization organization = newOrganization(tenant, "ORG-SES-2");
-		User user = newUser(tenant, organization, "revoked@acme.test");
+		User user = newUser("revoked@acme.test");
+		Membership membership = newMembership(tenant, organization, user);
 
 		Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
 		Session session = new Session();
 		session.setTenantId(tenant.getId());
 		session.setUserId(user.getId());
+		session.setMembershipId(membership.getId());
 		session.setClientType(ClientType.MOBILE);
 		session.setLastUsedAt(now);
 		session.setExpiresAt(now.plusSeconds(3600));

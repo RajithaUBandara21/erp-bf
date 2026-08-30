@@ -40,6 +40,9 @@ class RoleServiceIntegrationTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private MembershipRepository membershipRepository;
+
+	@Autowired
 	private AuditLogRepository auditLogRepository;
 
 	private List<AuditLog> auditLogsFor(UUID entityId, String action) {
@@ -56,17 +59,28 @@ class RoleServiceIntegrationTest {
 
 	private User createTenantUser(AuthenticatedUser owner, String email) {
 		User user = new User();
-		user.setTenantId(owner.tenantId());
-		user.setOrganizationId(owner.organizationId());
 		user.setEmail(email);
 		user.setPasswordHash("hashed-password");
 		user.setFullName(email);
-		return userRepository.save(user);
+		user = userRepository.save(user);
+
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(owner.tenantId());
+		membership.setOrganizationId(owner.organizationId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		membershipRepository.save(membership);
+		return user;
 	}
 
-	private static AuthenticatedUser asCaller(User user) {
-		return new AuthenticatedUser(user.getId(), user.getTenantId(), user.getOrganizationId(),
-				user.getEmail(), UUID.randomUUID());
+	private UUID membershipIdOf(UUID userId) {
+		return membershipRepository.findByUserId(userId).getFirst().getId();
+	}
+
+	private AuthenticatedUser asCaller(User user) {
+		Membership membership = membershipRepository.findByUserId(user.getId()).getFirst();
+		return new AuthenticatedUser(user.getId(), membership.getTenantId(), membership.getOrganizationId(),
+				user.getEmail(), UUID.randomUUID(), membership.getId());
 	}
 
 	private AuthenticatedUser administrator(AuthenticatedUser owner, String email) {
@@ -255,7 +269,7 @@ class RoleServiceIntegrationTest {
 
 		UserRole assignment = new UserRole();
 		assignment.setTenantId(caller.tenantId());
-		assignment.setUserId(caller.userId());
+		assignment.setMembershipId(caller.membershipId());
 		assignment.setRoleId(role.id());
 		userRoleRepository.save(assignment);
 
@@ -417,7 +431,8 @@ class RoleServiceIntegrationTest {
 
 		roleService.assignMember(admin, salesRole.id(), target.getId());
 
-		assertThat(userRoleRepository.existsByUserIdAndRoleId(target.getId(), salesRole.id())).isTrue();
+		assertThat(userRoleRepository.existsByMembershipIdAndRoleId(membershipIdOf(target.getId()), salesRole.id()))
+				.isTrue();
 	}
 
 }

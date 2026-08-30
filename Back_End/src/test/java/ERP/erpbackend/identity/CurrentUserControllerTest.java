@@ -38,6 +38,9 @@ class CurrentUserControllerTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private MembershipRepository membershipRepository;
+
 	private AuthenticatedUser registerOwner(String email) {
 		TokenResponse response = registrationService.register(
 				new RegisterRequest("Acme " + email, "Ada Owner", email, PASSWORD, ClientType.WEB));
@@ -46,7 +49,8 @@ class CurrentUserControllerTest {
 
 	private String tokenFor(AuthenticatedUser user) {
 		return jwtService.issueAccessToken(new AuthenticatedUser(
-				user.userId(), user.tenantId(), user.organizationId(), user.email(), UUID.randomUUID()));
+				user.userId(), user.tenantId(), user.organizationId(), user.email(), UUID.randomUUID(),
+				user.membershipId()));
 	}
 
 	@Test
@@ -63,22 +67,28 @@ class CurrentUserControllerTest {
 		AuthenticatedUser owner = registerOwner("me-tenant@acme.test");
 
 		User viewerUser = new User();
-		viewerUser.setTenantId(owner.tenantId());
-		viewerUser.setOrganizationId(owner.organizationId());
 		viewerUser.setEmail("viewer@me-tenant.test");
 		viewerUser.setPasswordHash("hashed-password");
 		viewerUser.setFullName("Vic Viewer");
 		viewerUser = userRepository.save(viewerUser);
 
+		Membership viewerMembership = new Membership();
+		viewerMembership.setUserId(viewerUser.getId());
+		viewerMembership.setTenantId(owner.tenantId());
+		viewerMembership.setOrganizationId(owner.organizationId());
+		viewerMembership.setStatus(MembershipStatus.ACTIVE);
+		viewerMembership = membershipRepository.save(viewerMembership);
+
 		UUID viewerRoleId = roleRepository.findByTenantIdAndName(owner.tenantId(), "Viewer").orElseThrow().getId();
 		UserRole assignment = new UserRole();
 		assignment.setTenantId(owner.tenantId());
-		assignment.setUserId(viewerUser.getId());
+		assignment.setMembershipId(viewerMembership.getId());
 		assignment.setRoleId(viewerRoleId);
 		userRoleRepository.save(assignment);
 
 		AuthenticatedUser viewer = new AuthenticatedUser(
-				viewerUser.getId(), owner.tenantId(), owner.organizationId(), viewerUser.getEmail(), UUID.randomUUID());
+				viewerUser.getId(), owner.tenantId(), owner.organizationId(), viewerUser.getEmail(), UUID.randomUUID(),
+				viewerMembership.getId());
 
 		mockMvc.perform(get("/api/auth/me/permissions").header("Authorization", "Bearer " + tokenFor(viewer)))
 				.andExpect(status().isOk())

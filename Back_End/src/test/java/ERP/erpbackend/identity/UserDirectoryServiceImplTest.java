@@ -21,6 +21,9 @@ class UserDirectoryServiceImplTest {
 	@Mock
 	private UserRepository userRepository;
 
+	@Mock
+	private MembershipRepository membershipRepository;
+
 	@InjectMocks
 	private UserDirectoryServiceImpl userDirectoryService;
 
@@ -30,6 +33,13 @@ class UserDirectoryServiceImplTest {
 		user.setEmail(email);
 		ReflectionTestUtils.setField(user, "id", id);
 		return user;
+	}
+
+	private Membership membershipFor(UUID userId) {
+		Membership membership = new Membership();
+		membership.setUserId(userId);
+		membership.setStatus(MembershipStatus.ACTIVE);
+		return membership;
 	}
 
 	@Test
@@ -65,6 +75,32 @@ class UserDirectoryServiceImplTest {
 		Map<UUID, UserSummaryResponse> summaries = userDirectoryService.findSummariesByIds(Set.of());
 
 		assertThat(summaries).isEmpty();
+		verifyNoInteractions(userRepository);
+	}
+
+	@Test
+	void listActiveTenantMembersReturnsMembersOrderedByFullName() {
+		UUID tenantId = UUID.randomUUID();
+		UUID graceId = UUID.randomUUID();
+		UUID adaId = UUID.randomUUID();
+		when(membershipRepository.findByTenantIdAndStatus(tenantId, MembershipStatus.ACTIVE))
+				.thenReturn(List.of(membershipFor(graceId), membershipFor(adaId)));
+		when(userRepository.findAllById(List.of(graceId, adaId))).thenReturn(List.of(
+				userWith(graceId, "Grace Hopper", "grace@acme.test"),
+				userWith(adaId, "Ada Lovelace", "ada@acme.test")));
+
+		List<UserSummaryResponse> members = userDirectoryService.listActiveTenantMembers(tenantId);
+
+		assertThat(members).extracting(UserSummaryResponse::fullName)
+				.containsExactly("Ada Lovelace", "Grace Hopper");
+	}
+
+	@Test
+	void listActiveTenantMembersShortCircuitsWhenTenantHasNoMembers() {
+		UUID tenantId = UUID.randomUUID();
+		when(membershipRepository.findByTenantIdAndStatus(tenantId, MembershipStatus.ACTIVE)).thenReturn(List.of());
+
+		assertThat(userDirectoryService.listActiveTenantMembers(tenantId)).isEmpty();
 		verifyNoInteractions(userRepository);
 	}
 

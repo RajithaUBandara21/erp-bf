@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Assigns one {@link Role} to one {@link User}. {@code tenantId} is denormalized so tenant-scoped queries need no join through {@code roles}. */
+/** Assigns one {@link Role} to one {@link Membership}. {@code tenantId} is denormalized so tenant-scoped queries need no join through {@code roles}. */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,8 +20,8 @@ public class UserRole extends AuditableEntity {
 	@Column(name = "tenant_id", nullable = false)
 	private UUID tenantId;
 
-	@Column(name = "user_id", nullable = false)
-	private UUID userId;
+	@Column(name = "membership_id", nullable = false)
+	private UUID membershipId;
 
 	@Column(name = "role_id", nullable = false)
 	private UUID roleId;

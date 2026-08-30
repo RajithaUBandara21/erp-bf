@@ -22,7 +22,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(
@@ -36,7 +35,7 @@ class UserDirectoryControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
-	private UserRepository userRepository;
+	private UserDirectoryService userDirectoryService;
 
 	@MockitoBean(name = "perms")
 	private PermissionChecker perms;
@@ -48,31 +47,21 @@ class UserDirectoryControllerTest {
 	private RevokedSessionRegistry revokedSessionRegistry;
 
 	private static final AuthenticatedUser PRINCIPAL = new AuthenticatedUser(
-			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID());
+			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID(),
+			UUID.randomUUID());
 
 	private static Authentication authenticatedPrincipal() {
 		return new UsernamePasswordAuthenticationToken(
 				PRINCIPAL, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
 	}
 
-	private static User user(UUID id, String fullName, String email) {
-		User user = new User();
-		user.setTenantId(PRINCIPAL.tenantId());
-		user.setOrganizationId(PRINCIPAL.organizationId());
-		user.setEmail(email);
-		user.setPasswordHash("hashed");
-		user.setFullName(fullName);
-		ReflectionTestUtils.setField(user, "id", id);
-		return user;
-	}
-
 	@Test
 	void listReturnsTenantUsersWhenCallerHasUserView() throws Exception {
 		UUID adaId = UUID.randomUUID();
 		when(perms.has("user.view")).thenReturn(true);
-		when(userRepository.findByTenantIdOrderByFullNameAsc(PRINCIPAL.tenantId())).thenReturn(List.of(
-				user(adaId, "Ada Lovelace", "ada@acme.test"),
-				user(UUID.randomUUID(), "Grace Hopper", "grace@acme.test")));
+		when(userDirectoryService.listActiveTenantMembers(PRINCIPAL.tenantId())).thenReturn(List.of(
+				new UserSummaryResponse(adaId, "Ada Lovelace", "ada@acme.test"),
+				new UserSummaryResponse(UUID.randomUUID(), "Grace Hopper", "grace@acme.test")));
 
 		mockMvc.perform(get("/api/users").with(authentication(authenticatedPrincipal())))
 				.andExpect(status().isOk())

@@ -48,10 +48,8 @@ class MembershipRepositoryTest {
 		return organizationRepository.saveAndFlush(organization);
 	}
 
-	private User user(Tenant tenant, Organization organization, String email) {
+	private User user(String email) {
 		User user = new User();
-		user.setTenantId(tenant.getId());
-		user.setOrganizationId(organization.getId());
 		user.setEmail(email);
 		user.setPasswordHash("hashed-password");
 		user.setFullName("Membership Holder");
@@ -71,7 +69,7 @@ class MembershipRepositoryTest {
 	void savesAndFindsMembershipWithAuditFields() {
 		Tenant tenant = tenant("TEN-MEM-1");
 		Organization organization = organization(tenant, "ORG-MEM-1");
-		User user = user(tenant, organization, "holder@acme.test");
+		User user = user("holder@acme.test");
 
 		Membership saved = membershipRepository.saveAndFlush(membership(tenant, organization, user));
 
@@ -90,7 +88,7 @@ class MembershipRepositoryTest {
 	void rejectsDuplicateMembershipForSameUserAndOrganization() {
 		Tenant tenant = tenant("TEN-MEM-2");
 		Organization organization = organization(tenant, "ORG-MEM-2");
-		User user = user(tenant, organization, "dupe@acme.test");
+		User user = user("dupe@acme.test");
 		membershipRepository.saveAndFlush(membership(tenant, organization, user));
 
 		Membership duplicate = membership(tenant, organization, user);
@@ -100,11 +98,27 @@ class MembershipRepositoryTest {
 	}
 
 	@Test
+	void findsActiveMembershipByUserAndTenant() {
+		Tenant tenant = tenant("TEN-MEM-4");
+		Organization organization = organization(tenant, "ORG-MEM-4");
+		User user = user("active-lookup@acme.test");
+		Membership saved = membershipRepository.saveAndFlush(membership(tenant, organization, user));
+
+		assertThat(membershipRepository.findByUserIdAndTenantIdAndStatus(
+				user.getId(), tenant.getId(), MembershipStatus.ACTIVE))
+				.map(Membership::getId)
+				.contains(saved.getId());
+		assertThat(membershipRepository.findByUserIdAndTenantIdAndStatus(
+				user.getId(), tenant.getId(), MembershipStatus.PENDING))
+				.isEmpty();
+	}
+
+	@Test
 	void allowsSameUserToHoldMembershipsInDifferentOrganizations() {
 		Tenant tenant = tenant("TEN-MEM-3");
 		Organization organizationA = organization(tenant, "ORG-MEM-3A");
 		Organization organizationB = organization(tenant, "ORG-MEM-3B");
-		User user = user(tenant, organizationA, "multi-org@acme.test");
+		User user = user("multi-org@acme.test");
 
 		membershipRepository.saveAndFlush(membership(tenant, organizationA, user));
 		Membership second = membershipRepository.saveAndFlush(membership(tenant, organizationB, user));

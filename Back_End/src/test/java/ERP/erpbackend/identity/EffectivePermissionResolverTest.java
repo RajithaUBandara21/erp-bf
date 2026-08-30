@@ -37,6 +37,9 @@ class EffectivePermissionResolverTest {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private MembershipRepository membershipRepository;
+
 	private AuthenticatedUser registerOwner(String email) {
 		TokenResponse response = registrationService.register(
 				new RegisterRequest("Acme " + email, "Ada Owner", email, PASSWORD, ClientType.WEB));
@@ -47,11 +50,11 @@ class EffectivePermissionResolverTest {
 	void ownerResolvesEveryCatalogPermission() {
 		AuthenticatedUser owner = registerOwner("resolver-owner@acme.test");
 
-		assertThat(resolver.resolve(owner.userId(), owner.tenantId())).hasSize(95);
+		assertThat(resolver.resolve(owner.membershipId())).hasSize(95);
 	}
 
 	@Test
-	void userWithNoRolesResolvesEmptySet() {
+	void membershipWithNoRolesResolvesEmptySet() {
 		Tenant tenant = new Tenant();
 		tenant.setName("no-roles");
 		tenant.setCode("resolver-no-roles");
@@ -64,21 +67,26 @@ class EffectivePermissionResolverTest {
 		organization = organizationRepository.save(organization);
 
 		User user = new User();
-		user.setTenantId(tenant.getId());
-		user.setOrganizationId(organization.getId());
 		user.setEmail("roleless@acme.test");
 		user.setPasswordHash("hashed-password");
 		user.setFullName("Roleless User");
 		user = userRepository.save(user);
 
-		assertThat(resolver.resolve(user.getId(), tenant.getId())).isEmpty();
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(tenant.getId());
+		membership.setOrganizationId(organization.getId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		membership = membershipRepository.save(membership);
+
+		assertThat(resolver.resolve(membership.getId())).isEmpty();
 	}
 
 	@Test
-	void assignmentUnderAnotherTenantIsExcluded() {
-		AuthenticatedUser owner = registerOwner("resolver-tenant@acme.test");
+	void unknownMembershipResolvesEmptySet() {
+		registerOwner("resolver-unknown@acme.test");
 
-		assertThat(resolver.resolve(owner.userId(), UUID.randomUUID())).isEmpty();
+		assertThat(resolver.resolve(UUID.randomUUID())).isEmpty();
 	}
 
 }

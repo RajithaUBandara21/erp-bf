@@ -28,6 +28,7 @@ public class RoleService {
 	private final UserRoleRepository userRoleRepository;
 	private final PermissionRepository permissionRepository;
 	private final UserRepository userRepository;
+	private final MembershipRepository membershipRepository;
 	private final EffectivePermissionResolver effectivePermissionResolver;
 	private final AuditService auditService;
 
@@ -59,9 +60,11 @@ public class RoleService {
 		List<String> permissionCodes = permissionRepository.findAllById(permissionIds).stream()
 				.map(Permission::getCode).sorted().toList();
 
-		List<UUID> memberIds = userRoleRepository.findByRoleId(roleId).stream()
-				.map(UserRole::getUserId).toList();
-		List<RoleMemberResponse> members = userRepository.findAllById(memberIds).stream()
+		List<UUID> membershipIds = userRoleRepository.findByRoleId(roleId).stream()
+				.map(UserRole::getMembershipId).toList();
+		List<UUID> memberUserIds = membershipRepository.findAllById(membershipIds).stream()
+				.map(Membership::getUserId).toList();
+		List<RoleMemberResponse> members = userRepository.findAllById(memberUserIds).stream()
 				.map(user -> new RoleMemberResponse(user.getId(), user.getFullName(), user.getEmail()))
 				.sorted(Comparator.comparing(RoleMemberResponse::fullName, String.CASE_INSENSITIVE_ORDER))
 				.toList();
@@ -122,19 +125,19 @@ public class RoleService {
 	@Transactional
 	public void assignMember(AuthenticatedUser caller, UUID roleId, UUID userId) {
 		Role role = requireRole(caller.tenantId(), roleId);
-		requireTenantUser(caller.tenantId(), userId);
+		UUID membershipId = requireTenantMembership(caller.tenantId(), userId);
 
 		if (isOwnerRole(role) && !callerHoldsOwner(caller)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only an Owner can grant the Owner role.");
 		}
-		if (userRoleRepository.existsByUserIdAndRoleId(userId, roleId)) {
+		if (userRoleRepository.existsByMembershipIdAndRoleId(membershipId, roleId)) {
 			return;
 		}
 		assertCallerCanGrant(caller, grantedCodes(roleId));
 
 		UserRole assignment = new UserRole();
 		assignment.setTenantId(caller.tenantId());
-		assignment.setUserId(userId);
+		assignment.setMembershipId(membershipId);
 		assignment.setRoleId(roleId);
 		userRoleRepository.save(assignment);
 
@@ -144,7 +147,13 @@ public class RoleService {
 	@Transactional
 	public void unassignMember(AuthenticatedUser caller, UUID roleId, UUID userId) {
 		Role role = requireRole(caller.tenantId(), roleId);
-		UserRole assignment = userRoleRepository.findByUserIdAndRoleId(userId, roleId).orElse(null);
+		UUID membershipId = membershipRepository
+				.findByUserIdAndTenantIdAndStatus(userId, caller.tenantId(), MembershipStatus.ACTIVE)
+				.map(Membership::getId).orElse(null);
+		if (membershipId == null) {
+			return;
+		}
+		UserRole assignment = userRoleRepository.findByMembershipIdAndRoleId(membershipId, roleId).orElse(null);
 		if (assignment == null) {
 			return;
 		}
@@ -181,8 +190,9 @@ public class RoleService {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ROLE_NOT_FOUND));
 	}
 
-	private void requireTenantUser(UUID tenantId, UUID userId) {
-		userRepository.findByIdAndTenantId(userId, tenantId)
+	private UUID requireTenantMembership(UUID tenantId, UUID userId) {
+		return membershipRepository.findByUserIdAndTenantIdAndStatus(userId, tenantId, MembershipStatus.ACTIVE)
+				.map(Membership::getId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 	}
 
@@ -192,7 +202,7 @@ public class RoleService {
 
 	private boolean callerHoldsOwner(AuthenticatedUser caller) {
 		return roleRepository.findByTenantIdAndName(caller.tenantId(), SystemRole.OWNER.displayName())
-				.map(owner -> userRoleRepository.existsByUserIdAndRoleId(caller.userId(), owner.getId()))
+				.map(owner -> userRoleRepository.existsByMembershipIdAndRoleId(caller.membershipId(), owner.getId()))
 				.orElse(false);
 	}
 
@@ -215,7 +225,7 @@ public class RoleService {
 		if (requestedCodes.isEmpty()) {
 			return;
 		}
-		Set<String> held = effectivePermissionResolver.resolve(caller.userId(), caller.tenantId());
+		Set<String> held = effectivePermissionResolver.resolve(caller.membershipId());
 		List<String> exceeding = requestedCodes.stream()
 				.filter(code -> !held.contains(code)).distinct().sorted().toList();
 		if (!exceeding.isEmpty()) {

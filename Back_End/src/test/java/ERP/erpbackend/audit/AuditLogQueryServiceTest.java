@@ -31,7 +31,8 @@ class AuditLogQueryServiceTest {
 			auditLogRepository, userDirectoryService, organizationService, new JsonMapper());
 
 	private static final AuthenticatedUser CALLER = new AuthenticatedUser(
-			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID());
+			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID(),
+			UUID.randomUUID());
 
 	private AuditLog auditLogWith(UUID id, UUID userId, UUID organizationId, String beforeValue,
 			String afterValue) {

@@ -39,7 +39,10 @@ class SystemRoleProvisionerTest {
 	@Autowired
 	private UserRoleRepository userRoleRepository;
 
-	private record Fixture(UUID tenantId, UUID userId) {
+	@Autowired
+	private MembershipRepository membershipRepository;
+
+	private record Fixture(UUID tenantId, UUID membershipId) {
 	}
 
 	private Fixture provisionFreshTenant(String code) {
@@ -55,15 +58,20 @@ class SystemRoleProvisionerTest {
 		organization = organizationRepository.save(organization);
 
 		User user = new User();
-		user.setTenantId(tenant.getId());
-		user.setOrganizationId(organization.getId());
 		user.setEmail(code + "@acme.test");
 		user.setPasswordHash("hashed-password");
 		user.setFullName("First Owner");
 		user = userRepository.save(user);
 
-		systemRoleProvisioner.provisionForNewTenant(tenant.getId(), user.getId());
-		return new Fixture(tenant.getId(), user.getId());
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(tenant.getId());
+		membership.setOrganizationId(organization.getId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		membership = membershipRepository.save(membership);
+
+		systemRoleProvisioner.provisionForNewTenant(tenant.getId(), membership.getId());
+		return new Fixture(tenant.getId(), membership.getId());
 	}
 
 	private Role roleNamed(UUID tenantId, SystemRole systemRole) {
@@ -94,10 +102,10 @@ class SystemRoleProvisionerTest {
 	}
 
 	@Test
-	void assignsOnlyTheOwnerRoleToTheFirstUser() {
+	void assignsOnlyTheOwnerRoleToTheFirstMembership() {
 		Fixture fixture = provisionFreshTenant("prov-assign");
 
-		List<UserRole> assignments = userRoleRepository.findByUserId(fixture.userId());
+		List<UserRole> assignments = userRoleRepository.findByMembershipId(fixture.membershipId());
 		assertThat(assignments).hasSize(1);
 		assertThat(assignments.get(0).getRoleId())
 				.isEqualTo(roleNamed(fixture.tenantId(), SystemRole.OWNER).getId());

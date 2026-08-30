@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Creates the built-in {@link SystemRole}s for a newly created tenant and assigns its first user the Owner role. */
+/** Creates the built-in {@link SystemRole}s for a newly created tenant and assigns its first member the Owner role. */
 @Service
 @RequiredArgsConstructor
 public class SystemRoleProvisioner {
@@ -17,7 +17,7 @@ public class SystemRoleProvisioner {
 	private final UserRoleRepository userRoleRepository;
 
 	@Transactional
-	public void provisionForNewTenant(UUID tenantId, UUID ownerUserId) {
+	public void provisionForNewTenant(UUID tenantId, UUID ownerMembershipId) {
 		List<Permission> catalog = permissionRepository.findAll();
 
 		for (SystemRole systemRole : SystemRole.values()) {
@@ -35,7 +35,7 @@ public class SystemRoleProvisioner {
 			rolePermissionRepository.saveAll(grants);
 
 			if (systemRole == SystemRole.OWNER) {
-				userRoleRepository.save(assignment(tenantId, ownerUserId, roleId));
+				userRoleRepository.save(assignment(tenantId, ownerMembershipId, roleId));
 			}
 		}
 	}
@@ -47,10 +47,10 @@ public class SystemRoleProvisioner {
 		return grant;
 	}
 
-	private UserRole assignment(UUID tenantId, UUID userId, UUID roleId) {
+	private UserRole assignment(UUID tenantId, UUID membershipId, UUID roleId) {
 		UserRole assignment = new UserRole();
 		assignment.setTenantId(tenantId);
-		assignment.setUserId(userId);
+		assignment.setMembershipId(membershipId);
 		assignment.setRoleId(roleId);
 		return assignment;
 	}

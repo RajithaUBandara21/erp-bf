@@ -11,12 +11,12 @@ public interface PermissionRepository extends JpaRepository<Permission, UUID> {
 
 	List<Permission> findByCodeIn(Collection<String> codes);
 
-	/** The distinct permission codes a user holds across every role assigned to them within one tenant. */
+	/** The distinct permission codes a Membership holds across every role assigned to it. */
 	@Query("""
 			SELECT DISTINCT p.code FROM Permission p, RolePermission rp, UserRole ur
 			WHERE rp.permissionId = p.id AND ur.roleId = rp.roleId
-			  AND ur.userId = :userId AND ur.tenantId = :tenantId
+			  AND ur.membershipId = :membershipId
 			""")
-	List<String> findEffectiveCodes(@Param("userId") UUID userId, @Param("tenantId") UUID tenantId);
+	List<String> findEffectiveCodes(@Param("membershipId") UUID membershipId);
 
 }

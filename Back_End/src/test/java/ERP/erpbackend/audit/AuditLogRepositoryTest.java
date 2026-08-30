@@ -63,10 +63,8 @@ class AuditLogRepositoryTest {
 		return organizationRepository.saveAndFlush(organization);
 	}
 
-	private User newUser(Tenant tenant, Organization organization, String email) {
+	private User newUser(String email) {
 		User user = new User();
-		user.setTenantId(tenant.getId());
-		user.setOrganizationId(organization.getId());
 		user.setEmail(email);
 		user.setPasswordHash("hashed-password");
 		user.setFullName("Audit Actor");
@@ -77,7 +75,7 @@ class AuditLogRepositoryTest {
 	void savesAndFindsAuditLogWithAllFieldsAndJsonSnapshotsIntact() {
 		Tenant tenant = newTenant("TEN-AUD-1");
 		Organization organization = newOrganization(tenant, "ORG-AUD-1");
-		User user = newUser(tenant, organization, "actor@acme.test");
+		User user = newUser("actor@acme.test");
 		UUID entityId = UUID.randomUUID();
 
 		AuditLog auditLog = new AuditLog();
@@ -145,7 +143,7 @@ class AuditLogRepositoryTest {
 	void searchFiltersByEntityTypeActionActorAndDateRangeWithinTenant() {
 		Tenant tenant = newTenant("TEN-AUD-3");
 		Organization organization = newOrganization(tenant, "ORG-AUD-3");
-		User actor = newUser(tenant, organization, "actor3@acme.test");
+		User actor = newUser("actor3@acme.test");
 		Tenant otherTenant = newTenant("TEN-AUD-4");
 
 		Instant day1 = Instant.parse("2026-08-01T00:00:00Z");

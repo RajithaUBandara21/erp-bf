@@ -4,23 +4,17 @@ import ERP.erpbackend.common.AuditableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** A platform-wide account. Organization scope and Role assignment live on {@link Membership}, not here. */
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
 public class User extends AuditableEntity {
-
-	@Column(name = "tenant_id", nullable = false)
-	private UUID tenantId;
-
-	@Column(name = "organization_id", nullable = false)
-	private UUID organizationId;
 
 	@Column(nullable = false)
 	private String email;

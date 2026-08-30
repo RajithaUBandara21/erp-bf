@@ -15,15 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserDirectoryController {
 
-	private final UserRepository userRepository;
+	private final UserDirectoryService userDirectoryService;
 
 	@GetMapping("/users")
 	@PreAuthorize("@perms.has('user.view')")
 	public ResponseEntity<List<UserSummaryResponse>> list(@AuthenticationPrincipal AuthenticatedUser caller) {
-		List<UserSummaryResponse> users = userRepository.findByTenantIdOrderByFullNameAsc(caller.tenantId()).stream()
-				.map(user -> new UserSummaryResponse(user.getId(), user.getFullName(), user.getEmail()))
-				.toList();
-		return ResponseEntity.ok(users);
+		return ResponseEntity.ok(userDirectoryService.listActiveTenantMembers(caller.tenantId()));
 	}
 
 }

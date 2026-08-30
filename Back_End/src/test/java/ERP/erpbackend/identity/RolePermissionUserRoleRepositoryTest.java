@@ -43,6 +43,9 @@ class RolePermissionUserRoleRepositoryTest {
 	@Autowired
 	private UserRoleRepository userRoleRepository;
 
+	@Autowired
+	private MembershipRepository membershipRepository;
+
 	private Tenant tenant(String code) {
 		Tenant tenant = new Tenant();
 		tenant.setName(code);
@@ -50,7 +53,7 @@ class RolePermissionUserRoleRepositoryTest {
 		return tenantRepository.saveAndFlush(tenant);
 	}
 
-	private User user(Tenant tenant, String email) {
+	private Membership member(Tenant tenant, String email) {
 		Organization organization = new Organization();
 		organization.setTenantId(tenant.getId());
 		organization.setName(email);
@@ -58,12 +61,17 @@ class RolePermissionUserRoleRepositoryTest {
 		organization = organizationRepository.saveAndFlush(organization);
 
 		User user = new User();
-		user.setTenantId(tenant.getId());
-		user.setOrganizationId(organization.getId());
 		user.setEmail(email);
 		user.setPasswordHash("hashed-password");
 		user.setFullName("Role Holder");
-		return userRepository.saveAndFlush(user);
+		user = userRepository.saveAndFlush(user);
+
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(tenant.getId());
+		membership.setOrganizationId(organization.getId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		return membershipRepository.saveAndFlush(membership);
 	}
 
 	private Role role(UUID tenantId, String name) {
@@ -81,10 +89,10 @@ class RolePermissionUserRoleRepositoryTest {
 		return mapping;
 	}
 
-	private UserRole userRole(UUID tenantId, UUID userId, UUID roleId) {
+	private UserRole userRole(UUID tenantId, UUID membershipId, UUID roleId) {
 		UserRole assignment = new UserRole();
 		assignment.setTenantId(tenantId);
-		assignment.setUserId(userId);
+		assignment.setMembershipId(membershipId);
 		assignment.setRoleId(roleId);
 		return assignment;
 	}
@@ -127,21 +135,21 @@ class RolePermissionUserRoleRepositoryTest {
 	@Test
 	void savesAndFindsUserRoleAssignments() {
 		Tenant tenant = tenant("TEN-UR-1");
-		User holder = user(tenant, "holder@acme.test");
+		Membership holder = member(tenant, "holder@acme.test");
 		Role owner = role(tenant.getId(), "Owner");
 		Role viewer = role(tenant.getId(), "Viewer");
 
 		userRoleRepository.saveAndFlush(userRole(tenant.getId(), holder.getId(), owner.getId()));
 		userRoleRepository.saveAndFlush(userRole(tenant.getId(), holder.getId(), viewer.getId()));
 
-		assertThat(userRoleRepository.findByUserId(holder.getId())).hasSize(2);
-		assertThat(userRoleRepository.existsByUserIdAndRoleId(holder.getId(), owner.getId())).isTrue();
+		assertThat(userRoleRepository.findByMembershipId(holder.getId())).hasSize(2);
+		assertThat(userRoleRepository.existsByMembershipIdAndRoleId(holder.getId(), owner.getId())).isTrue();
 	}
 
 	@Test
 	void rejectsDuplicateRoleForSameUser() {
 		Tenant tenant = tenant("TEN-UR-2");
-		User holder = user(tenant, "dupe@acme.test");
+		Membership holder = member(tenant, "dupe@acme.test");
 		Role owner = role(tenant.getId(), "Owner");
 		userRoleRepository.saveAndFlush(userRole(tenant.getId(), holder.getId(), owner.getId()));
 		UserRole duplicate = userRole(tenant.getId(), holder.getId(), owner.getId());

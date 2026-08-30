@@ -9,6 +9,7 @@ import ERP.erpbackend.organization.OrganizationRepository;
 import ERP.erpbackend.organization.Tenant;
 import ERP.erpbackend.organization.TenantRepository;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +41,9 @@ class RegistrationServiceTest {
 	@Autowired
 	private UserRoleRepository userRoleRepository;
 
+	@Autowired
+	private MembershipRepository membershipRepository;
+
 	@Test
 	void registersLinkedTenantOrganizationAndUserWithHashedPassword() {
 		RegisterRequest request =
@@ -52,12 +56,32 @@ class RegistrationServiceTest {
 		User user = userRepository.findById(account.userId()).orElseThrow();
 
 		assertThat(organization.getTenantId()).isEqualTo(tenant.getId());
-		assertThat(user.getTenantId()).isEqualTo(tenant.getId());
-		assertThat(user.getOrganizationId()).isEqualTo(organization.getId());
 		assertThat(user.getEmail()).isEqualTo("ada@acme.test");
 		assertThat(user.getFullName()).isEqualTo("Ada Owner");
 		assertThat(user.getPasswordHash()).isNotEqualTo("Sunrise8");
 		assertThat(passwordEncoder.matches("Sunrise8", user.getPasswordHash())).isTrue();
+		assertThat(membershipRepository.findByUserId(user.getId()))
+				.singleElement()
+				.satisfies(membership -> {
+					assertThat(membership.getTenantId()).isEqualTo(tenant.getId());
+					assertThat(membership.getOrganizationId()).isEqualTo(organization.getId());
+				});
+	}
+
+	@Test
+	void createsOneActiveMembershipLinkingTheUserToTheNewOrganization() {
+		RegisterRequest request =
+				new RegisterRequest("Acme Corp", "Ada Owner", "ada-membership@acme.test", "Sunrise8", ClientType.WEB);
+
+		TokenResponse account = registrationService.register(request);
+
+		assertThat(membershipRepository.findByUserId(account.userId()))
+				.singleElement()
+				.satisfies(membership -> {
+					assertThat(membership.getTenantId()).isEqualTo(account.tenantId());
+					assertThat(membership.getOrganizationId()).isEqualTo(account.organizationId());
+					assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+				});
 	}
 
 	@Test
@@ -112,7 +136,8 @@ class RegistrationServiceTest {
 		assertThat(roles).allMatch(Role::isSystemManaged);
 
 		Role owner = roleRepository.findByTenantIdAndName(account.tenantId(), "Owner").orElseThrow();
-		assertThat(userRoleRepository.findByUserId(account.userId()))
+		UUID membershipId = membershipRepository.findByUserId(account.userId()).getFirst().getId();
+		assertThat(userRoleRepository.findByMembershipId(membershipId))
 				.singleElement()
 				.satisfies(assignment -> assertThat(assignment.getRoleId()).isEqualTo(owner.getId()));
 	}

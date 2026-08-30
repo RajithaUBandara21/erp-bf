@@ -41,6 +41,9 @@ class AuthenticationServiceTest {
 	private UserRepository userRepository;
 
 	@Autowired
+	private MembershipRepository membershipRepository;
+
+	@Autowired
 	private JwtService jwtService;
 
 	@Autowired
@@ -154,10 +157,36 @@ class AuthenticationServiceTest {
 	void loginWithInactiveUserFailsWithInvalidCredentials() {
 		String email = "inactive@acme.test";
 		String organizationCode = registerAndGetOrganizationCode(email);
-		User user = userRepository.findByTenantIdAndEmail(
-				tenantRepository.findByCode(organizationCode).orElseThrow().getId(), email).orElseThrow();
+		User user = userRepository.findByEmail(email).orElseThrow();
 		user.setActive(false);
 		userRepository.save(user);
+
+		assertUnauthorized(new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+	}
+
+	@Test
+	void loginCarriesTheCallersMembershipIntoTheAccessTokenAndSession() {
+		String email = "membership-claim@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+
+		TokenResponse response = authenticationService.login(
+				new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
+
+		AuthenticatedUser authenticatedUser = jwtService.parseAccessToken(response.accessToken()).orElseThrow();
+		Session session = sessionRepository.findById(authenticatedUser.sessionId()).orElseThrow();
+		assertThat(authenticatedUser.membershipId()).isEqualTo(session.getMembershipId());
+		assertThat(membershipRepository.findById(session.getMembershipId()).orElseThrow().getUserId())
+				.isEqualTo(response.userId());
+	}
+
+	@Test
+	void loginFailsWhenTheUserHasNoActiveMembershipInThatTenant() {
+		String email = "no-active-membership@acme.test";
+		String organizationCode = registerAndGetOrganizationCode(email);
+		User user = userRepository.findByEmail(email).orElseThrow();
+		Membership membership = membershipRepository.findByUserId(user.getId()).getFirst();
+		membership.setStatus(MembershipStatus.PENDING);
+		membershipRepository.save(membership);
 
 		assertUnauthorized(new LoginRequest(organizationCode, email, PASSWORD, ClientType.WEB));
 	}

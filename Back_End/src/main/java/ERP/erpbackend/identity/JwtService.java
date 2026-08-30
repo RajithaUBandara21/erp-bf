@@ -21,6 +21,7 @@ public class JwtService {
 	private static final String CLAIM_ORGANIZATION_ID = "organizationId";
 	private static final String CLAIM_EMAIL = "email";
 	private static final String CLAIM_SESSION_ID = "sessionId";
+	private static final String CLAIM_MEMBERSHIP_ID = "membershipId";
 
 	private final JwtProperties jwtProperties;
 
@@ -32,6 +33,7 @@ public class JwtService {
 				.claim(CLAIM_ORGANIZATION_ID, user.organizationId().toString())
 				.claim(CLAIM_EMAIL, user.email())
 				.claim(CLAIM_SESSION_ID, user.sessionId().toString())
+				.claim(CLAIM_MEMBERSHIP_ID, user.membershipId().toString())
 				.issuedAt(Date.from(now))
 				.expiration(Date.from(now.plus(jwtProperties.accessTokenTtl())))
 				.signWith(signingKey())
@@ -45,12 +47,19 @@ public class JwtService {
 					.build()
 					.parseSignedClaims(token)
 					.getPayload();
+			String membershipId = claims.get(CLAIM_MEMBERSHIP_ID, String.class);
+			if (membershipId == null) {
+				// A token issued before the Membership cutover (feature 5a.2). Reject it so the
+				// caller re-authenticates and picks up a Membership-scoped token.
+				return Optional.empty();
+			}
 			return Optional.of(new AuthenticatedUser(
 					UUID.fromString(claims.getSubject()),
 					UUID.fromString(claims.get(CLAIM_TENANT_ID, String.class)),
 					UUID.fromString(claims.get(CLAIM_ORGANIZATION_ID, String.class)),
 					claims.get(CLAIM_EMAIL, String.class),
-					UUID.fromString(claims.get(CLAIM_SESSION_ID, String.class))));
+					UUID.fromString(claims.get(CLAIM_SESSION_ID, String.class)),
+					UUID.fromString(membershipId)));
 		} catch (JwtException | IllegalArgumentException ex) {
 			return Optional.empty();
 		}

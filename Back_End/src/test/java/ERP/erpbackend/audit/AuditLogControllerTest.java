@@ -56,7 +56,8 @@ class AuditLogControllerTest {
 	private RevokedSessionRegistry revokedSessionRegistry;
 
 	private static final AuthenticatedUser PRINCIPAL = new AuthenticatedUser(
-			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID());
+			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID(),
+			UUID.randomUUID());
 
 	private static Authentication authenticatedPrincipal() {
 		return new UsernamePasswordAuthenticationToken(

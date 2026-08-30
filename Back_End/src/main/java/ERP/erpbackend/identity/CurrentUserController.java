@@ -18,7 +18,7 @@ public class CurrentUserController {
 	/** The caller's own effective permission codes - used by the frontend to render the module grid and gate actions. */
 	@GetMapping("/permissions")
 	public ResponseEntity<MePermissionsResponse> permissions(@AuthenticationPrincipal AuthenticatedUser caller) {
-		List<String> codes = effectivePermissionResolver.resolve(caller.userId(), caller.tenantId())
+		List<String> codes = effectivePermissionResolver.resolve(caller.membershipId())
 				.stream().sorted().toList();
 		return ResponseEntity.ok(new MePermissionsResponse(codes));
 	}

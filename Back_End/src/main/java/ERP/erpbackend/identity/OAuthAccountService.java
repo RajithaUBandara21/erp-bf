@@ -19,6 +19,7 @@ public class OAuthAccountService {
 	private final OAuthStateService oAuthStateService;
 	private final OAuthLoginExchangeService oAuthLoginExchangeService;
 	private final UserRepository userRepository;
+	private final MembershipRepository membershipRepository;
 	private final OAuthAccountRepository oAuthAccountRepository;
 	private final SessionTokenIssuer sessionTokenIssuer;
 
@@ -49,6 +50,12 @@ public class OAuthAccountService {
 			return OAuthLinkResult.failure(null);
 		}
 
+		Optional<Membership> membership = membershipRepository.findByUserId(userId).stream().findFirst();
+		if (membership.isEmpty()) {
+			return OAuthLinkResult.failure(null);
+		}
+		UUID tenantId = membership.get().getTenantId();
+
 		Optional<OAuthAccount> linkedToAnotherUser = oAuthAccountRepository
 				.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, identity.providerUserId())
 				.filter(account -> !account.getUserId().equals(userId));
@@ -57,9 +64,9 @@ public class OAuthAccountService {
 		}
 
 		OAuthAccount account = oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(user.get().getTenantId(), userId, OAuthProvider.GOOGLE)
+				.findByTenantIdAndUserIdAndProvider(tenantId, userId, OAuthProvider.GOOGLE)
 				.orElseGet(OAuthAccount::new);
-		account.setTenantId(user.get().getTenantId());
+		account.setTenantId(tenantId);
 		account.setUserId(userId);
 		account.setProvider(OAuthProvider.GOOGLE);
 		account.setProviderUserId(identity.providerUserId());
@@ -81,8 +88,13 @@ public class OAuthAccountService {
 			return OAuthLoginResult.failure(null);
 		}
 
-		Session session = sessionTokenIssuer.createSession(user.get(), ClientType.WEB);
-		TokenResponse tokenResponse = sessionTokenIssuer.issueTokens(user.get(), session);
+		Optional<Membership> membership = membershipRepository.findByUserId(user.get().getId()).stream().findFirst();
+		if (membership.isEmpty()) {
+			return OAuthLoginResult.failure(null);
+		}
+
+		Session session = sessionTokenIssuer.createSession(user.get(), membership.get(), ClientType.WEB);
+		TokenResponse tokenResponse = sessionTokenIssuer.issueTokens(user.get(), membership.get(), session);
 		String exchangeCode = oAuthLoginExchangeService.issue(tokenResponse);
 
 		return OAuthLoginResult.success(exchangeCode);

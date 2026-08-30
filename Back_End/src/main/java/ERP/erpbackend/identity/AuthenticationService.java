@@ -25,6 +25,7 @@ public class AuthenticationService {
 
 	private final OrganizationService organizationService;
 	private final UserRepository userRepository;
+	private final MembershipRepository membershipRepository;
 	private final SessionRepository sessionRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtProperties jwtProperties;
@@ -33,9 +34,8 @@ public class AuthenticationService {
 	private final RevokedSessionRegistry revokedSessionRegistry;
 
 	public TokenResponse login(LoginRequest request) {
-		Optional<User> user = organizationService.findTenantIdByCode(normalize(request.organizationCode()))
-				.flatMap(tenantId ->
-						userRepository.findByTenantIdAndEmail(tenantId, request.email().toLowerCase(Locale.ROOT)));
+		Optional<UUID> tenantId = organizationService.findTenantIdByCode(normalize(request.organizationCode()));
+		Optional<User> user = userRepository.findByEmail(request.email().toLowerCase(Locale.ROOT));
 
 		// Run one hash comparison on every path, matched or not, falling back to a fixed dummy hash
 		// when no user was found - mirrors Spring's DaoAuthenticationProvider and closes the timing
@@ -47,8 +47,13 @@ public class AuthenticationService {
 			throw invalidCredentials();
 		}
 
-		Session session = sessionTokenIssuer.createSession(user.get(), request.clientType());
-		return sessionTokenIssuer.issueTokens(user.get(), session);
+		Membership membership = tenantId
+				.flatMap(id -> membershipRepository.findByUserIdAndTenantIdAndStatus(
+						user.get().getId(), id, MembershipStatus.ACTIVE))
+				.orElseThrow(AuthenticationService::invalidCredentials);
+
+		Session session = sessionTokenIssuer.createSession(user.get(), membership, request.clientType());
+		return sessionTokenIssuer.issueTokens(user.get(), membership, session);
 	}
 
 	public TokenResponse refresh(RefreshRequest request) {
@@ -63,12 +68,15 @@ public class AuthenticationService {
 				.filter(User::isActive)
 				.orElseThrow(AuthenticationService::invalidCredentials);
 
+		Membership membership = membershipRepository.findById(session.getMembershipId())
+				.orElseThrow(AuthenticationService::invalidCredentials);
+
 		Instant now = Instant.now();
 		session.setLastUsedAt(now);
 		session.setExpiresAt(now.plus(jwtProperties.refreshTokenTtl()));
 		sessionRepository.save(session);
 
-		return sessionTokenIssuer.issueTokens(user, session);
+		return sessionTokenIssuer.issueTokens(user, membership, session);
 	}
 
 	public void logout(RefreshRequest request) {

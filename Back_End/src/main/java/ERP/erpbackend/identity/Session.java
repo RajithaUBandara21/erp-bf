@@ -25,6 +25,9 @@ public class Session extends AuditableEntity {
 	@Column(name = "user_id", nullable = false)
 	private UUID userId;
 
+	@Column(name = "membership_id", nullable = false)
+	private UUID membershipId;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "client_type", nullable = false)
 	private ClientType clientType;

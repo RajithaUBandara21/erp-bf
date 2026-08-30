@@ -18,7 +18,8 @@ class PermissionCheckerTest {
 	private final PermissionChecker checker = new PermissionChecker(resolver);
 
 	private static final AuthenticatedUser USER = new AuthenticatedUser(
-			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID());
+			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID(),
+			UUID.randomUUID());
 
 	@AfterEach
 	void clearContext() {
@@ -38,7 +39,7 @@ class PermissionCheckerTest {
 	@Test
 	void returnsTrueWhenTheResolvedSetContainsTheCode() {
 		authenticate();
-		when(resolver.resolve(USER.userId(), USER.tenantId())).thenReturn(Set.of("role.view", "role.edit"));
+		when(resolver.resolve(USER.membershipId())).thenReturn(Set.of("role.view", "role.edit"));
 
 		assertThat(checker.has("role.view")).isTrue();
 	}
@@ -46,7 +47,7 @@ class PermissionCheckerTest {
 	@Test
 	void returnsFalseWhenTheResolvedSetLacksTheCode() {
 		authenticate();
-		when(resolver.resolve(USER.userId(), USER.tenantId())).thenReturn(Set.of("role.view"));
+		when(resolver.resolve(USER.membershipId())).thenReturn(Set.of("role.view"));
 
 		assertThat(checker.has("role.delete")).isFalse();
 	}

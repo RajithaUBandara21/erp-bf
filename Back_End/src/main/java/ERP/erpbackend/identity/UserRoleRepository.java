@@ -8,15 +8,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRoleRepository extends JpaRepository<UserRole, UUID> {
 
-	List<UserRole> findByUserId(UUID userId);
+	List<UserRole> findByMembershipId(UUID membershipId);
 
 	List<UserRole> findByRoleId(UUID roleId);
 
 	List<UserRole> findByRoleIdIn(Collection<UUID> roleIds);
 
-	Optional<UserRole> findByUserIdAndRoleId(UUID userId, UUID roleId);
+	Optional<UserRole> findByMembershipIdAndRoleId(UUID membershipId, UUID roleId);
 
-	boolean existsByUserIdAndRoleId(UUID userId, UUID roleId);
+	boolean existsByMembershipIdAndRoleId(UUID membershipId, UUID roleId);
 
 	long countByRoleId(UUID roleId);
 
