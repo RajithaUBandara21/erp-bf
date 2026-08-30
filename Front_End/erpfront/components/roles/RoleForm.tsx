@@ -3,8 +3,7 @@
 import type { FormEvent, ReactNode } from "react";
 import { useState, useTransition } from "react";
 import { useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import type { MatrixGroup } from "@/lib/permission-matrix";
 import type { RoleDetail } from "@/types/roles";
 import { createRole, updateRole, type RoleFormState } from "@/actions/roles";
