@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { assignMember, unassignMember, type RoleFormState } from "@/actions/roles";
 import type { RoleMember, UserSummary } from "@/types/roles";
 import { initials } from "@/components/roles/RoleMembersList";
-
-// i18n keys (build-plan 4): members, members_empty, add_member, add, adding, remove, removing,
-// no_users_to_add, select_user_placeholder
 
 interface RoleMembersProps {
 	roleId: string;
@@ -20,6 +17,7 @@ interface RoleMembersProps {
 /** Interactive Members panel: list, remove a member, add one from the tenant directory. */
 export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMembersProps) {
 	const locale = useLocale();
+	const t = useTranslations("roles.members");
 	const [error, setError] = useState<string | null>(null);
 	const [selectedId, setSelectedId] = useState("");
 	const [pending, startTransition] = useTransition();
@@ -41,10 +39,10 @@ export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMember
 
 	return (
 		<section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-			<h2 className="mb-3 text-sm font-semibold">Members</h2>
+			<h2 className="mb-3 text-sm font-semibold">{t("heading")}</h2>
 
 			{members.length === 0 ? (
-				<p className="py-2 text-center text-xs text-muted">No users have this role yet.</p>
+				<p className="py-2 text-center text-xs text-muted">{t("empty")}</p>
 			) : (
 				<ul className="flex flex-col gap-2">
 					{members.map((member) => (
@@ -62,9 +60,9 @@ export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMember
 									onClick={() => run(() => unassignMember(locale, roleId, member.userId))}
 									disabled={pending}
 									className="min-h-9 rounded-[5px] border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-danger hover:border-danger hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-55"
-									aria-label={`Remove ${member.fullName} from this role`}
+									aria-label={t("removeAria", { name: member.fullName })}
 								>
-									Remove
+									{t("remove")}
 								</button>
 							)}
 						</li>
@@ -80,9 +78,9 @@ export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMember
 							onChange={(event) => setSelectedId(event.target.value)}
 							disabled={pending || addable.length === 0}
 							className="min-h-9 flex-1 rounded-[5px] border border-border bg-bg px-2.5 py-2 text-[13px] text-text focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-55"
-							aria-label="Choose a user to add to this role"
+							aria-label={t("addAria")}
 						>
-							<option value="">Add a user...</option>
+							<option value="">{t("addPlaceholder")}</option>
 							{addable.map((user) => (
 								<option key={user.id} value={user.id}>
 									{user.fullName} ({user.email})
@@ -95,11 +93,11 @@ export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMember
 							disabled={pending || !selectedId}
 							className="min-h-9 rounded-[5px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-55"
 						>
-							{pending ? "Adding..." : "Add"}
+							{pending ? t("adding") : t("add")}
 						</button>
 					</div>
 					{addable.length === 0 && (
-						<p className="mt-2 text-[11px] text-faint">No other users to add.</p>
+						<p className="mt-2 text-[11px] text-faint">{t("noneToAdd")}</p>
 					)}
 				</div>
 			)}

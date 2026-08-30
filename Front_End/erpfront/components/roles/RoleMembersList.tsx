@@ -1,14 +1,20 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { RoleMember } from "@/types/roles";
 
-// i18n keys (build-plan 4): members, members_empty
-// Read-only member list. Step 8 adds the interactive add/remove variant.
+// "use client": RoleForm.tsx renders this as its client-tree fallback when no membersSlot is
+// passed - useTranslations works from either side of the server/client boundary, same reasoning
+// as RoleTypeBadge.
+// Read-only member list. RoleMembers.tsx adds the interactive add/remove variant.
 
 export function RoleMembersList({ members }: { members: RoleMember[] }) {
+	const t = useTranslations("roles.members");
 	return (
 		<section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-			<h2 className="mb-3 text-sm font-semibold">Members</h2>
+			<h2 className="mb-3 text-sm font-semibold">{t("heading")}</h2>
 			{members.length === 0 ? (
-				<p className="py-2 text-center text-xs text-muted">No users have this role yet.</p>
+				<p className="py-2 text-center text-xs text-muted">{t("empty")}</p>
 			) : (
 				<ul className="flex flex-col gap-2">
 					{members.map((member) => (

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { authedFetch } from "@/lib/api";
-import { groupCatalog } from "@/lib/permission-matrix";
+import { groupCatalog, resourceLabel } from "@/lib/permission-matrix";
 import { can, fetchMyPermissions } from "@/lib/permissions";
 import type { PermissionCatalogEntry, RoleDetail, UserSummary } from "@/types/roles";
 import { DeleteRoleButton } from "@/components/roles/DeleteRoleButton";
@@ -12,19 +12,20 @@ import { RoleMembers } from "@/components/roles/RoleMembers";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// i18n keys (build-plan 4): role_not_found, role_load_error
 export default async function RoleDetailPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
+	const rolesT = await getTranslations("roles");
 
 	if (!UUID_RE.test(id)) {
-		return <Notice>Role not found.</Notice>;
+		return <Notice>{rolesT("notFound")}</Notice>;
 	}
 
-	const [roleResult, catalogResult, usersResult, perms] = await Promise.all([
+	const [roleResult, catalogResult, usersResult, perms, permissionsT] = await Promise.all([
 		authedFetch<RoleDetail>(`/api/roles/${id}`),
 		authedFetch<PermissionCatalogEntry[]>("/api/permissions"),
 		authedFetch<UserSummary[]>("/api/users"),
 		fetchMyPermissions(),
+		getTranslations("permissions"),
 	]);
 
 	if (
@@ -35,15 +36,17 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ id:
 	}
 
 	if (!roleResult.success && roleResult.status === 404) {
-		return <Notice>Role not found.</Notice>;
+		return <Notice>{rolesT("notFound")}</Notice>;
 	}
 
 	if (!roleResult.success || !catalogResult.success) {
-		return <Notice>We couldn&apos;t load this role right now. Please refresh to try again.</Notice>;
+		return <Notice>{rolesT("detailLoadError")}</Notice>;
 	}
 
 	const role = roleResult.data;
-	const groups = groupCatalog(catalogResult.data ?? []);
+	const groups = groupCatalog(catalogResult.data ?? [], (resource) =>
+		permissionsT.has(`resources.${resource}`) ? permissionsT(`resources.${resource}`) : resourceLabel(resource),
+	);
 	const canEditMembers = can(perms, "role.edit");
 	const editable = !role.systemManaged && canEditMembers;
 	const deletable = !role.systemManaged && can(perms, "role.delete");

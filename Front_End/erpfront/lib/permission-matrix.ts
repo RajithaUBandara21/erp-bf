@@ -44,8 +44,17 @@ export interface MatrixGroup {
 	rows: MatrixResourceRow[];
 }
 
-/** Flat permission catalog -> ordered, grouped resource rows for the matrix UI. */
-export function groupCatalog(entries: readonly PermissionCatalogEntry[]): MatrixGroup[] {
+/**
+ * Flat permission catalog -> ordered, grouped resource rows for the matrix UI. `labelForResource`
+ * is caller-supplied (built from `getTranslations("permissions")`) so row labels render in the
+ * active locale; `resourceLabel` stays as the untranslated fallback for a resource with no catalog
+ * key. `MatrixGroup.label` keeps the untranslated `RESOURCE_GROUPS` text - `PermissionMatrix`
+ * resolves the translated group header from `group.key` itself rather than reading `.label`.
+ */
+export function groupCatalog(
+	entries: readonly PermissionCatalogEntry[],
+	labelForResource: (resource: string) => string = resourceLabel,
+): MatrixGroup[] {
 	const byResource = new Map<string, Partial<Record<PermissionAction, string>>>();
 	for (const entry of entries) {
 		const row = byResource.get(entry.resource) ?? {};
@@ -61,7 +70,7 @@ export function groupCatalog(entries: readonly PermissionCatalogEntry[]): Matrix
 			const codesByAction = byResource.get(resource);
 			if (!codesByAction) continue;
 			placed.add(resource);
-			rows.push({ resource, label: resourceLabel(resource), codesByAction });
+			rows.push({ resource, label: labelForResource(resource), codesByAction });
 		}
 		if (rows.length > 0) {
 			groups.push({ key: group.key, label: group.label, rows });
@@ -71,7 +80,7 @@ export function groupCatalog(entries: readonly PermissionCatalogEntry[]): Matrix
 	const leftover: MatrixResourceRow[] = [];
 	for (const [resource, codesByAction] of byResource) {
 		if (placed.has(resource)) continue;
-		leftover.push({ resource, label: resourceLabel(resource), codesByAction });
+		leftover.push({ resource, label: labelForResource(resource), codesByAction });
 	}
 	if (leftover.length > 0) {
 		leftover.sort((a, b) => a.resource.localeCompare(b.resource));

@@ -16,7 +16,8 @@
 		"operations": "Operations",
 		"business_partners": "Business partners",
 		"finance": "Finance",
-		"insight_system": "Insight & system"
+		"insight_system": "Insight & system",
+		"administration": "Administration"
 	},
 	"modules": {
 		"products": { "label": "Products", "description": "Catalog, pricing, variants" },
@@ -144,6 +145,96 @@
 		"signingOut": "Signing out...",
 		"theme": {
 			"toggle": "Toggle dark mode"
+		}
+	},
+	"roles": {
+		"title": "Roles & permissions",
+		"intro": "Roles bundle permissions. Assign a role to a user to grant everything it allows.",
+		"newRole": "New role",
+		"forbidden": "You don''t have access to roles and permissions. Ask an administrator if you need it.",
+		"loadError": "We couldn''t load roles right now. Please refresh to try again.",
+		"notFound": "Role not found.",
+		"detailLoadError": "We couldn''t load this role right now. Please refresh to try again.",
+		"catalogLoadError": "We couldn''t load the permission catalog right now. Please refresh to try again.",
+		"list": {
+			"empty": "No roles yet.",
+			"roleColumn": "Role",
+			"descriptionColumn": "Description",
+			"membersColumn": "Members",
+			"permissionsColumn": "Permissions",
+			"typeColumn": "Type"
+		},
+		"type": {
+			"system": "System",
+			"custom": "Custom"
+		},
+		"memberCount": "{count, plural, one {# member} other {# members}}",
+		"backToRoles": "Back to roles",
+		"cancel": "Cancel",
+		"save": "Save changes",
+		"saving": "Saving...",
+		"saved": "Saved",
+		"create": "Create role",
+		"creating": "Creating...",
+		"info": {
+			"heading": "Role info",
+			"nameLabel": "Role name",
+			"descriptionLabel": "Description",
+			"scopeLabel": "Scope",
+			"scopeValue": "Entire tenant",
+			"scopeHint": "Branch and store level roles are planned for a later release."
+		},
+		"systemRoleNote": "This is a built-in system role. Its permissions are fixed and it cannot be edited or deleted.",
+		"delete": "Delete role",
+		"deleting": "Deleting...",
+		"deleteConfirm": "Delete this role? Users lose its permissions immediately. This cannot be undone.",
+		"members": {
+			"heading": "Members",
+			"empty": "No users have this role yet.",
+			"remove": "Remove",
+			"removeAria": "Remove {name} from this role",
+			"addPlaceholder": "Add a user...",
+			"addAria": "Choose a user to add to this role",
+			"add": "Add",
+			"adding": "Adding...",
+			"noneToAdd": "No other users to add."
+		}
+	},
+	"permissions": {
+		"heading": "Permissions",
+		"scopeNote": "Scope: entire tenant",
+		"legend": "View lets a user open records. Create, Edit, and Delete change them. Approve confirms documents such as orders and invoices.",
+		"moduleColumn": "Module",
+		"actions": {
+			"view": "View",
+			"create": "Create",
+			"edit": "Edit",
+			"delete": "Delete",
+			"approve": "Approve"
+		},
+		"toggleColumnAria": "Toggle {action} for all modules",
+		"cellAria": "{resource} - {action}",
+		"otherGroup": "Other",
+		"resources": {
+			"product": "Products",
+			"inventory": "Inventory",
+			"purchasing": "Purchasing",
+			"sales": "Sales",
+			"pos": "Point of Sale",
+			"ecommerce": "E-Commerce",
+			"customer": "Customers",
+			"supplier": "Suppliers",
+			"shipping": "Shipping",
+			"payment": "Payments",
+			"accounting": "Accounting",
+			"promotion": "Promotions",
+			"reporting": "Reporting",
+			"notification": "Notifications",
+			"audit": "Audit Logs",
+			"user": "Users",
+			"role": "Roles & permissions",
+			"organization": "Organization",
+			"billing": "Billing & plan"
 		}
 	}
 }

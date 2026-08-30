@@ -1,19 +1,20 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import type { PermissionAction } from "@/types/roles";
 import { PERMISSION_ACTIONS, type MatrixGroup } from "@/lib/permission-matrix";
+import { RESOURCE_GROUPS } from "@/lib/resource-groups";
 
-// i18n keys (build-plan 4): module_col, perm_view, perm_create, perm_edit, perm_delete, perm_approve,
-// perm_toggle_all, perm_legend
-
-const ACTION_LABELS: Record<PermissionAction, string> = {
-	VIEW: "View",
-	CREATE: "Create",
-	EDIT: "Edit",
-	DELETE: "Delete",
-	APPROVE: "Approve",
+const ACTION_KEYS: Record<PermissionAction, string> = {
+	VIEW: "view",
+	CREATE: "create",
+	EDIT: "edit",
+	DELETE: "delete",
+	APPROVE: "approve",
 };
+
+const GROUP_KEYS = new Set(RESOURCE_GROUPS.map((group) => group.key));
 
 interface Props {
 	groups: MatrixGroup[];
@@ -25,8 +26,14 @@ interface Props {
 }
 
 export function PermissionMatrix({ groups, selectedCodes, onChange, readOnly = false }: Props) {
+	const t = useTranslations("permissions");
+	const moduleGroupsT = useTranslations("moduleGroups");
 	const selected = useMemo(() => new Set(selectedCodes), [selectedCodes]);
 	const disabled = readOnly || !onChange;
+
+	function groupLabel(key: string): string {
+		return GROUP_KEYS.has(key) ? moduleGroupsT(key) : t("otherGroup");
+	}
 
 	// Every code in the matrix, per action column, for the "toggle all" header checkboxes.
 	const columnCodes = useMemo(() => {
@@ -68,20 +75,23 @@ export function PermissionMatrix({ groups, selectedCodes, onChange, readOnly = f
 			<table className="w-full min-w-[420px] border-collapse text-xs">
 				<thead>
 					<tr>
-						<th className="p-2 text-left text-[10px] font-bold uppercase tracking-wide text-muted">Module</th>
+						<th className="p-2 text-left text-[10px] font-bold uppercase tracking-wide text-muted">
+							{t("moduleColumn")}
+						</th>
 						{PERMISSION_ACTIONS.map((action) => {
 							const codes = columnCodes[action];
 							const on = codes.filter((code) => selected.has(code)).length;
+							const actionLabel = t(`actions.${ACTION_KEYS[action]}`);
 							return (
 								<th
 									key={action}
 									className="p-2 text-center text-[10px] font-bold uppercase tracking-wide text-muted"
 								>
 									<div className="flex flex-col items-center gap-1.5">
-										<span>{ACTION_LABELS[action]}</span>
+										<span>{actionLabel}</span>
 										<input
 											type="checkbox"
-											aria-label={`Toggle ${ACTION_LABELS[action]} for all modules`}
+											aria-label={t("toggleColumnAria", { action: actionLabel })}
 											className="h-4 w-4 accent-accent"
 											disabled={disabled}
 											checked={codes.length > 0 && on === codes.length}
@@ -104,7 +114,7 @@ export function PermissionMatrix({ groups, selectedCodes, onChange, readOnly = f
 									colSpan={1 + PERMISSION_ACTIONS.length}
 									className="bg-bg px-2 pt-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-faint"
 								>
-									{group.label}
+									{groupLabel(group.key)}
 								</td>
 							</tr>
 							{group.rows.map((row) => (
@@ -117,7 +127,7 @@ export function PermissionMatrix({ groups, selectedCodes, onChange, readOnly = f
 												{code ? (
 													<input
 														type="checkbox"
-														aria-label={`${row.label} - ${ACTION_LABELS[action]}`}
+														aria-label={t("cellAria", { resource: row.label, action: t(`actions.${ACTION_KEYS[action]}`) })}
 														className="h-[18px] w-[18px] accent-accent"
 														disabled={disabled}
 														checked={selected.has(code)}
