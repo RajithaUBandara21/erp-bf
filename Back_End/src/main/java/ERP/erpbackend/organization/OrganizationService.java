@@ -39,4 +39,19 @@ public interface OrganizationService {
 	/** Names for the given tenant ids, keyed by id. A missing/deleted id is simply absent from the result. */
 	Map<UUID, String> findTenantNamesByIds(Collection<UUID> tenantIds);
 
+	/**
+	 * The Organization's current employee-self-join invite code.
+	 *
+	 * @throws IllegalStateException if no organization has that id
+	 */
+	String findInviteCode(UUID organizationId);
+
+	/**
+	 * Replace the Organization's invite code with a fresh unique one and return it. Any code shared
+	 * before the call stops working immediately.
+	 *
+	 * @throws IllegalStateException if no organization has that id
+	 */
+	String rotateInviteCode(UUID organizationId);
+
 }

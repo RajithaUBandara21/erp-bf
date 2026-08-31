@@ -13,5 +13,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
 
 	boolean existsByTenantIdAndCode(UUID tenantId, String code);
 
+	boolean existsByInviteCode(String inviteCode);
+
 	long countByTenantId(UUID tenantId);
 }

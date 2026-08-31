@@ -318,4 +318,93 @@ class OrganizationServiceImplTest {
 		verify(organizationRepository, never()).save(any());
 	}
 
+	/** 10 chars from the ambiguity-free alphabet ABCDEFGHJKMNPQRSTVWXYZ0123456789. */
+	private static final String INVITE_CODE = "[ABCDEFGHJKMNPQRSTVWXYZ0-9]{10}";
+
+	@Test
+	void createTenantAndOrganizationAssignsAnInviteCodeFromTheAllowedAlphabet() {
+		when(tenantRepository.existsByCode("acme-corp")).thenReturn(false);
+		when(tenantRepository.save(any(Tenant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		organizationService.createTenantAndOrganization("Acme Corp");
+
+		ArgumentCaptor<Organization> captor = ArgumentCaptor.forClass(Organization.class);
+		verify(organizationRepository).save(captor.capture());
+		assertThat(captor.getValue().getInviteCode()).matches(INVITE_CODE);
+	}
+
+	@Test
+	void createOrganizationAssignsAnInviteCode() {
+		UUID tenantId = UUID.randomUUID();
+		when(tenantRepository.findByIdForUpdate(tenantId)).thenReturn(Optional.of(tenantWithLimit(tenantId, 5)));
+		when(organizationRepository.countByTenantId(tenantId)).thenReturn(1L);
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		organizationService.createOrganization(tenantId, "Warehouse B");
+
+		ArgumentCaptor<Organization> captor = ArgumentCaptor.forClass(Organization.class);
+		verify(organizationRepository).save(captor.capture());
+		assertThat(captor.getValue().getInviteCode()).matches(INVITE_CODE);
+	}
+
+	@Test
+	void inviteCodeGenerationRedrawsWhenTheFirstDrawIsAlreadyTaken() {
+		UUID tenantId = UUID.randomUUID();
+		when(tenantRepository.findByIdForUpdate(tenantId)).thenReturn(Optional.of(tenantWithLimit(tenantId, 5)));
+		when(organizationRepository.countByTenantId(tenantId)).thenReturn(1L);
+		when(organizationRepository.existsByInviteCode(anyString())).thenReturn(true, false);
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		organizationService.createOrganization(tenantId, "Warehouse B");
+
+		ArgumentCaptor<Organization> captor = ArgumentCaptor.forClass(Organization.class);
+		verify(organizationRepository).save(captor.capture());
+		assertThat(captor.getValue().getInviteCode()).matches(INVITE_CODE);
+		verify(organizationRepository, times(2)).existsByInviteCode(anyString());
+	}
+
+	@Test
+	void findInviteCodeReturnsTheStoredCode() {
+		UUID organizationId = UUID.randomUUID();
+		Organization organization = organizationWith(organizationId, "Head Office");
+		organization.setInviteCode("ABCDEFGHJK");
+		when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+
+		assertThat(organizationService.findInviteCode(organizationId)).isEqualTo("ABCDEFGHJK");
+	}
+
+	@Test
+	void findInviteCodeThrowsForAnUnknownOrganizationId() {
+		UUID organizationId = UUID.randomUUID();
+		when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> organizationService.findInviteCode(organizationId))
+				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void rotateInviteCodeReplacesTheCodeWithAFreshOneFromTheAllowedAlphabet() {
+		UUID organizationId = UUID.randomUUID();
+		Organization organization = organizationWith(organizationId, "Head Office");
+		organization.setInviteCode("OLDCODE123");
+		when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+		when(organizationRepository.save(any(Organization.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		String rotated = organizationService.rotateInviteCode(organizationId);
+
+		assertThat(rotated).matches(INVITE_CODE).isNotEqualTo("OLDCODE123");
+		assertThat(organization.getInviteCode()).isEqualTo(rotated);
+	}
+
+	@Test
+	void rotateInviteCodeThrowsForAnUnknownOrganizationId() {
+		UUID organizationId = UUID.randomUUID();
+		when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> organizationService.rotateInviteCode(organizationId))
+				.isInstanceOf(IllegalStateException.class);
+		verify(organizationRepository, never()).save(any());
+	}
+
 }

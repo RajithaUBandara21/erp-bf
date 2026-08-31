@@ -25,6 +25,9 @@ public class OrganizationServiceImpl implements OrganizationService {
 	/** Highest numeric suffix tried before falling back to a random suffix. */
 	private static final int MAX_NUMERIC_SUFFIX = 6;
 
+	/** Invite-code redraws before giving up: ~50 bits of entropy each, so a real collision needs the DB UNIQUE backstop. */
+	private static final int MAX_INVITE_CODE_ATTEMPTS = 5;
+
 	private final TenantRepository tenantRepository;
 	private final OrganizationRepository organizationRepository;
 
@@ -41,6 +44,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 		organization.setTenantId(tenant.getId());
 		organization.setName(organizationName);
 		organization.setCode(code);
+		organization.setInviteCode(uniqueInviteCode());
 		organization = organizationRepository.save(organization);
 
 		return new TenantOrganization(tenant.getId(), organization.getId());
@@ -96,7 +100,24 @@ public class OrganizationServiceImpl implements OrganizationService {
 		organization.setTenantId(tenantId);
 		organization.setName(name);
 		organization.setCode(code);
+		organization.setInviteCode(uniqueInviteCode());
 		return toDetail(organizationRepository.save(organization));
+	}
+
+	@Override
+	public String findInviteCode(UUID organizationId) {
+		return organizationRepository.findById(organizationId)
+				.map(Organization::getInviteCode)
+				.orElseThrow(() -> new IllegalStateException("No organization with id " + organizationId));
+	}
+
+	@Override
+	@Transactional
+	public String rotateInviteCode(UUID organizationId) {
+		Organization organization = organizationRepository.findById(organizationId)
+				.orElseThrow(() -> new IllegalStateException("No organization with id " + organizationId));
+		organization.setInviteCode(uniqueInviteCode());
+		return organizationRepository.save(organization).getInviteCode();
 	}
 
 	@Override
@@ -123,6 +144,21 @@ public class OrganizationServiceImpl implements OrganizationService {
 			candidate = base + "-" + suffix;
 		}
 		return taken.test(candidate) ? base + "-" + UUID.randomUUID().toString().substring(0, 8) : candidate;
+	}
+
+	/**
+	 * A fresh invite code that no organization holds yet. {@link Organization#newInviteCode()} owns the
+	 * format; the retry only removes the (negligible) chance of a random clash before the DB UNIQUE
+	 * constraint would. After {@link #MAX_INVITE_CODE_ATTEMPTS} redraws a residual collision surfaces as
+	 * a 409 via {@code GlobalExceptionHandler}.
+	 */
+	private String uniqueInviteCode() {
+		String candidate = Organization.newInviteCode();
+		for (int attempt = 0; attempt < MAX_INVITE_CODE_ATTEMPTS && organizationRepository.existsByInviteCode(candidate);
+				attempt++) {
+			candidate = Organization.newInviteCode();
+		}
+		return candidate;
 	}
 
 	private static OrganizationDetail toDetail(Organization organization) {
