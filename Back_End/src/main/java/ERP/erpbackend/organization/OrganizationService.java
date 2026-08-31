@@ -10,6 +10,15 @@ public interface OrganizationService {
 
 	TenantOrganization createTenantAndOrganization(String organizationName);
 
+	/**
+	 * Create a new Organization under an existing tenant with a per-tenant-unique {@code code}, active.
+	 *
+	 * @throws org.springframework.web.server.ResponseStatusException 409 if the tenant is already at or
+	 *     over its {@code maxOrganizations} limit
+	 * @throws IllegalStateException if no tenant has that id
+	 */
+	OrganizationDetail createOrganization(UUID tenantId, String name);
+
 	/** Names for the given organization ids, keyed by id. A missing/deleted id is simply absent from the result. */
 	Map<UUID, String> findNamesByIds(Collection<UUID> organizationIds);
 
@@ -18,6 +27,14 @@ public interface OrganizationService {
 
 	/** Active organizations across the given tenants. Empty input yields an empty list without querying. */
 	List<OrganizationSummary> findActiveByTenantIds(Collection<UUID> tenantIds);
+
+	/**
+	 * Every organization under one tenant (active and inactive), oldest first, plus that tenant's plan
+	 * and organization limit.
+	 *
+	 * @throws IllegalStateException if no tenant has that id
+	 */
+	OrganizationListView findAllByTenantId(UUID tenantId);
 
 	/** Names for the given tenant ids, keyed by id. A missing/deleted id is simply absent from the result. */
 	Map<UUID, String> findTenantNamesByIds(Collection<UUID> tenantIds);

@@ -6,10 +6,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +30,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
 	@Override
 	public TenantOrganization createTenantAndOrganization(String organizationName) {
-		String code = uniqueCodeFor(organizationName);
+		String code = uniqueCode(organizationName, tenantRepository::existsByCode);
 
 		Tenant tenant = new Tenant();
 		tenant.setName(organizationName);
@@ -68,6 +72,34 @@ public class OrganizationServiceImpl implements OrganizationService {
 	}
 
 	@Override
+	public OrganizationListView findAllByTenantId(UUID tenantId) {
+		Tenant tenant = tenantRepository.findById(tenantId)
+				.orElseThrow(() -> new IllegalStateException("No tenant with id " + tenantId));
+		List<OrganizationDetail> organizations = organizationRepository.findByTenantIdOrderByCreatedAtAsc(tenantId).stream()
+				.map(OrganizationServiceImpl::toDetail)
+				.toList();
+		return new OrganizationListView(tenant.getPlan(), tenant.getMaxOrganizations(), organizations);
+	}
+
+	@Override
+	@Transactional
+	public OrganizationDetail createOrganization(UUID tenantId, String name) {
+		Tenant tenant = tenantRepository.findByIdForUpdate(tenantId)
+				.orElseThrow(() -> new IllegalStateException("No tenant with id " + tenantId));
+		if (organizationRepository.countByTenantId(tenantId) >= tenant.getMaxOrganizations()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT,
+					"Organization limit reached for this plan. Ask your administrator to raise the limit.");
+		}
+		String code = uniqueCode(name, candidate -> organizationRepository.existsByTenantIdAndCode(tenantId, candidate));
+
+		Organization organization = new Organization();
+		organization.setTenantId(tenantId);
+		organization.setName(name);
+		organization.setCode(code);
+		return toDetail(organizationRepository.save(organization));
+	}
+
+	@Override
 	public Map<UUID, String> findTenantNamesByIds(Collection<UUID> tenantIds) {
 		if (tenantIds.isEmpty()) {
 			return Map.of();
@@ -76,23 +108,26 @@ public class OrganizationServiceImpl implements OrganizationService {
 				.collect(Collectors.toMap(Tenant::getId, Tenant::getName));
 	}
 
-	private String uniqueCodeFor(String organizationName) {
-		String base = slugify(organizationName);
+	/**
+	 * A slug of {@code name} that {@code taken} reports free: the bare slug, then {@code -2}..{@code -6},
+	 * then a random suffix. A residual collision still surfaces as a 409 via {@code GlobalExceptionHandler},
+	 * never a raw 500.
+	 */
+	private static String uniqueCode(String name, Predicate<String> taken) {
+		String base = slugify(name);
 		String candidate = base;
 		for (int suffix = 2; suffix <= MAX_NUMERIC_SUFFIX; suffix++) {
-			if (!tenantRepository.existsByCode(candidate)) {
+			if (!taken.test(candidate)) {
 				return candidate;
 			}
 			candidate = base + "-" + suffix;
 		}
-		if (!tenantRepository.existsByCode(candidate)) {
-			return candidate;
-		}
-		// Every numeric suffix up to MAX_NUMERIC_SUFFIX collided (or another
-		// request is racing this one) - fall back to a random suffix rather
-		// than probing forever. A leftover collision here still surfaces as a
-		// 409 via GlobalExceptionHandler, never a raw 500.
-		return base + "-" + UUID.randomUUID().toString().substring(0, 8);
+		return taken.test(candidate) ? base + "-" + UUID.randomUUID().toString().substring(0, 8) : candidate;
+	}
+
+	private static OrganizationDetail toDetail(Organization organization) {
+		return new OrganizationDetail(organization.getId(), organization.getName(), organization.getCode(),
+				organization.isActive(), organization.getCreatedAt());
 	}
 
 	private static String slugify(String value) {

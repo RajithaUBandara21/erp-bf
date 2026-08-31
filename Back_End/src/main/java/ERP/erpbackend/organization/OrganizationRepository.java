@@ -8,4 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface OrganizationRepository extends JpaRepository<Organization, UUID> {
 
 	List<Organization> findByTenantIdInAndActiveTrue(Collection<UUID> tenantIds);
+
+	List<Organization> findByTenantIdOrderByCreatedAtAsc(UUID tenantId);
+
+	boolean existsByTenantIdAndCode(UUID tenantId, String code);
+
+	long countByTenantId(UUID tenantId);
 }
