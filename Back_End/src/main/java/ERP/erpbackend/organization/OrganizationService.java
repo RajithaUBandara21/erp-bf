@@ -47,6 +47,12 @@ public interface OrganizationService {
 	String findInviteCode(UUID organizationId);
 
 	/**
+	 * Resolve a normalized invite code to its Organization, but only while that Organization is active.
+	 * Empty for an unknown code or an inactive Organization - the caller cannot tell the two apart.
+	 */
+	Optional<OrganizationInviteTarget> findByInviteCode(String inviteCode);
+
+	/**
 	 * Replace the Organization's invite code with a fresh unique one and return it. Any code shared
 	 * before the call stops working immediately.
 	 *

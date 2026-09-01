@@ -407,4 +407,36 @@ class OrganizationServiceImplTest {
 		verify(organizationRepository, never()).save(any());
 	}
 
+	@Test
+	void findByInviteCodeResolvesAnActiveOrganizationToAnInviteTarget() {
+		UUID organizationId = UUID.randomUUID();
+		UUID tenantId = UUID.randomUUID();
+		Organization organization = organizationWith(organizationId, "Head Office");
+		organization.setTenantId(tenantId);
+		when(organizationRepository.findByInviteCode("ABCDEFGHJK")).thenReturn(Optional.of(organization));
+
+		assertThat(organizationService.findByInviteCode("ABCDEFGHJK")).hasValueSatisfying(target -> {
+			assertThat(target.organizationId()).isEqualTo(organizationId);
+			assertThat(target.tenantId()).isEqualTo(tenantId);
+			assertThat(target.organizationName()).isEqualTo("Head Office");
+		});
+	}
+
+	@Test
+	void findByInviteCodeIsEmptyForAnUnknownCode() {
+		when(organizationRepository.findByInviteCode("NOPENOPENO")).thenReturn(Optional.empty());
+
+		assertThat(organizationService.findByInviteCode("NOPENOPENO")).isEmpty();
+	}
+
+	@Test
+	void findByInviteCodeIsEmptyWhenTheOrganizationIsInactive() {
+		Organization organization = organizationWith(UUID.randomUUID(), "Retired Branch");
+		organization.setTenantId(UUID.randomUUID());
+		organization.setActive(false);
+		when(organizationRepository.findByInviteCode("RETIRED123")).thenReturn(Optional.of(organization));
+
+		assertThat(organizationService.findByInviteCode("RETIRED123")).isEmpty();
+	}
+
 }

@@ -112,6 +112,14 @@ public class OrganizationServiceImpl implements OrganizationService {
 	}
 
 	@Override
+	public Optional<OrganizationInviteTarget> findByInviteCode(String inviteCode) {
+		return organizationRepository.findByInviteCode(inviteCode)
+				.filter(Organization::isActive)
+				.map(organization -> new OrganizationInviteTarget(
+						organization.getId(), organization.getTenantId(), organization.getName()));
+	}
+
+	@Override
 	@Transactional
 	public String rotateInviteCode(UUID organizationId) {
 		Organization organization = organizationRepository.findById(organizationId)
