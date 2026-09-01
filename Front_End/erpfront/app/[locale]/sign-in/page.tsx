@@ -1,10 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import type { SignInFormState } from "@/actions/auth";
 import { Link, redirect } from "@/i18n/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { postJson } from "@/lib/api";
 import { hasAccessToken, setAuthCookies } from "@/lib/auth-cookies";
-import type { TokenResponse } from "@/types/auth";
+import type { LoginResponse } from "@/types/auth";
 
 const OAUTH_ERROR_KEYS: Record<string, string> = {
 	"not-linked": "notLinked",
@@ -25,14 +26,23 @@ export default async function SignInPage({
 	// exchange runs here rather than as a server action. A failed/reused code falls through to the
 	// generic error below instead of throwing.
 	let googleError: string | undefined;
+	let oauthSelection: SignInFormState["selection"];
 	if (oauth === "code" && code) {
-		const result = await postJson<TokenResponse>("/api/auth/oauth/google/exchange", { code });
-		if (result.success) {
+		const result = await postJson<LoginResponse>("/api/auth/oauth/google/exchange", { code });
+		if (!result.success) {
+			googleError = t("google.signInFailed");
+		} else if (result.data.outcome === "AUTHENTICATED") {
 			// No "remember me" checkbox in this flow - default to a persistent session, like signUp does.
-			await setAuthCookies(result.data, true);
+			await setAuthCookies(result.data.session, true);
 			redirect({ href: "/", locale });
+		} else {
+			// Several organizations: hand the selection straight to the same selector the password flow uses.
+			oauthSelection = {
+				selectionToken: result.data.selectionToken,
+				organizations: result.data.organizations,
+				remember: true,
+			};
 		}
-		googleError = t("google.signInFailed");
 	} else if (oauth === "error") {
 		const key = reason && OAUTH_ERROR_KEYS[reason];
 		googleError = key ? t(`google.${key}`) : t("google.signInFailed");
@@ -62,7 +72,7 @@ export default async function SignInPage({
 					<span>{googleError}</span>
 				</div>
 			)}
-			<SignInForm />
+			<SignInForm initialSelection={oauthSelection} />
 		</AuthShell>
 	);
 }

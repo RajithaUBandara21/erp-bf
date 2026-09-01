@@ -98,18 +98,16 @@ class MembershipRepositoryTest {
 	}
 
 	@Test
-	void findsActiveMembershipByUserAndTenant() {
+	void findsActiveMembershipByUserAndOrganization() {
 		Tenant tenant = tenant("TEN-MEM-4");
 		Organization organization = organization(tenant, "ORG-MEM-4");
 		User user = user("active-lookup@acme.test");
 		Membership saved = membershipRepository.saveAndFlush(membership(tenant, organization, user));
 
-		assertThat(membershipRepository.findByUserIdAndTenantIdAndStatus(
-				user.getId(), tenant.getId(), MembershipStatus.ACTIVE))
+		assertThat(membershipRepository.findByUserIdAndOrganizationId(user.getId(), organization.getId()))
 				.map(Membership::getId)
 				.contains(saved.getId());
-		assertThat(membershipRepository.findByUserIdAndTenantIdAndStatus(
-				user.getId(), tenant.getId(), MembershipStatus.PENDING))
+		assertThat(membershipRepository.findByUserIdAndOrganizationId(user.getId(), java.util.UUID.randomUUID()))
 				.isEmpty();
 	}
 

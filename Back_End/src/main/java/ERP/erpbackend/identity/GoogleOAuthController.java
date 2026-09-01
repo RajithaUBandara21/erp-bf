@@ -74,7 +74,7 @@ public class GoogleOAuthController {
 	}
 
 	@PostMapping("/exchange")
-	public ResponseEntity<TokenResponse> exchange(@Valid @RequestBody ExchangeCodeRequest request,
+	public ResponseEntity<LoginResponse> exchange(@Valid @RequestBody ExchangeCodeRequest request,
 			HttpServletRequest servletRequest) {
 		if (!googleOAuthRateLimiter.allow(servletRequest.getRemoteAddr())) {
 			throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,

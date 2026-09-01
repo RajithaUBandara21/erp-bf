@@ -17,6 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ERP.erpbackend.TestcontainersConfiguration;
 import ERP.erpbackend.audit.AuditLogRepository;
+import ERP.erpbackend.organization.OrganizationService;
+import ERP.erpbackend.organization.TenantOrganization;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +71,13 @@ class GoogleOAuthControllerTest {
 	private MembershipRepository membershipRepository;
 
 	@Autowired
+	private OrganizationService organizationService;
+
+	@Autowired
 	private OAuthAccountRepository oAuthAccountRepository;
+
+	@Autowired
+	private SessionRepository sessionRepository;
 
 	@Autowired
 	private OAuthStateService oAuthStateService;
@@ -119,6 +127,32 @@ class GoogleOAuthControllerTest {
 		account.setProviderUserId(providerUserId);
 		account.setProviderEmail(providerEmail);
 		oAuthAccountRepository.save(account);
+	}
+
+	private void setSoleMembershipStatus(User user, MembershipStatus status) {
+		Membership membership = membershipOf(user);
+		membership.setStatus(status);
+		membershipRepository.save(membership);
+	}
+
+	private void addSecondActiveMembership(User user) {
+		TenantOrganization second = organizationService.createTenantAndOrganization("Second for " + user.getEmail());
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(second.tenantId());
+		membership.setOrganizationId(second.organizationId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		membershipRepository.save(membership);
+	}
+
+	private String loginExchangeCode(GoogleIdentity identity, String authCode) throws Exception {
+		when(googleTokenExchangeClient.exchange(authCode)).thenReturn(identity);
+		String state = oAuthStateService.issue(null);
+		MvcResult result = mockMvc.perform(get("/api/auth/oauth/google/callback")
+						.param("code", authCode).param("state", state))
+				.andExpect(status().isFound())
+				.andReturn();
+		return queryParam(result.getResponse().getHeader("Location"), "code");
 	}
 
 	@Test
@@ -232,8 +266,9 @@ class GoogleOAuthControllerTest {
 						.contentType("application/json")
 						.content("{ \"code\": \"" + exchangeCode + "\" }"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.userId").value(user.getId().toString()))
-				.andExpect(jsonPath("$.tenantId").value(membershipOf(user).getTenantId().toString()));
+				.andExpect(jsonPath("$.outcome").value("AUTHENTICATED"))
+				.andExpect(jsonPath("$.session.userId").value(user.getId().toString()))
+				.andExpect(jsonPath("$.session.tenantId").value(membershipOf(user).getTenantId().toString()));
 
 		mockMvc.perform(post("/api/auth/oauth/google/exchange")
 						.contentType("application/json")
@@ -244,6 +279,39 @@ class GoogleOAuthControllerTest {
 				.filter(entry -> user.getId().equals(entry.getUserId()) && "auth.login".equals(entry.getAction()))
 				.count();
 		assertThat(loginAuditRows).isEqualTo(2); // registration's own session, then this Google login
+	}
+
+	@Test
+	void loginWhenTheOnlyMembershipIsPendingRedirectsToAGenericErrorAndIssuesNoSession() throws Exception {
+		User user = registerUser("pending-only-google@acme.test");
+		linkUser(user, "pending-sub", user.getEmail());
+		setSoleMembershipStatus(user, MembershipStatus.PENDING);
+		long sessionsBefore = sessionRepository.count();
+
+		String code = loginExchangeCode(new GoogleIdentity("pending-sub", user.getEmail(), true), "pending-login");
+
+		assertThat(code).isNull(); // redirected to ?oauth=error, not ?oauth=code
+		assertThat(sessionRepository.count()).isEqualTo(sessionsBefore);
+	}
+
+	@Test
+	void loginWithSeveralActiveMembershipsReturnsTheOrganizationSelectorNotASession() throws Exception {
+		User user = registerUser("multi-google@acme.test");
+		linkUser(user, "multi-sub", user.getEmail());
+		addSecondActiveMembership(user);
+		long sessionsBefore = sessionRepository.count();
+
+		String code = loginExchangeCode(new GoogleIdentity("multi-sub", user.getEmail(), true), "multi-login");
+
+		mockMvc.perform(post("/api/auth/oauth/google/exchange")
+						.contentType("application/json")
+						.content("{ \"code\": \"" + code + "\" }"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.outcome").value("SELECT_ORGANIZATION"))
+				.andExpect(jsonPath("$.session").doesNotExist())
+				.andExpect(jsonPath("$.selectionToken").isNotEmpty())
+				.andExpect(jsonPath("$.organizations.length()").value(2));
+		assertThat(sessionRepository.count()).isEqualTo(sessionsBefore);
 	}
 
 	@Test

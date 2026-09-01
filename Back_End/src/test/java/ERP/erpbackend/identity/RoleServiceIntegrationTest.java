@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ERP.erpbackend.TestcontainersConfiguration;
 import ERP.erpbackend.audit.AuditLog;
 import ERP.erpbackend.audit.AuditLogRepository;
+import ERP.erpbackend.organization.Organization;
+import ERP.erpbackend.organization.OrganizationRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,9 @@ class RoleServiceIntegrationTest {
 	private MembershipRepository membershipRepository;
 
 	@Autowired
+	private OrganizationRepository organizationRepository;
+
+	@Autowired
 	private AuditLogRepository auditLogRepository;
 
 	private List<AuditLog> auditLogsFor(UUID entityId, String action) {
@@ -75,6 +80,27 @@ class RoleServiceIntegrationTest {
 
 	private UUID membershipIdOf(UUID userId) {
 		return membershipRepository.findByUserId(userId).getFirst().getId();
+	}
+
+	private Organization createSiblingOrganization(AuthenticatedUser owner, String code) {
+		Organization organization = new Organization();
+		organization.setTenantId(owner.tenantId());
+		organization.setName(code);
+		organization.setCode(code);
+		return organizationRepository.saveAndFlush(organization);
+	}
+
+	private void addActiveMembership(User user, AuthenticatedUser owner, Organization organization) {
+		Membership membership = new Membership();
+		membership.setUserId(user.getId());
+		membership.setTenantId(owner.tenantId());
+		membership.setOrganizationId(organization.getId());
+		membership.setStatus(MembershipStatus.ACTIVE);
+		membershipRepository.save(membership);
+	}
+
+	private UUID membershipIdOf(UUID userId, UUID organizationId) {
+		return membershipRepository.findByUserIdAndOrganizationId(userId, organizationId).orElseThrow().getId();
 	}
 
 	private AuthenticatedUser asCaller(User user) {
@@ -293,6 +319,27 @@ class RoleServiceIntegrationTest {
 		AuditLog unassignedLog = auditLogsFor(viewerRoleId, "role.member_unassigned").stream()
 				.findFirst().orElseThrow();
 		assertThat(unassignedLog.getBeforeValue()).contains(teammate.getId().toString());
+	}
+
+	@Test
+	void assignsAndUnassignsAgainstTheCallersOrgWhenTheTargetHoldsSeveralActiveMembershipsInTheTenant() {
+		AuthenticatedUser owner = registerOwner("multi-membership@acme.test");
+		User teammate = createTenantUser(owner, "teammate@multi-membership.test");
+		Organization siblingOrg = createSiblingOrganization(owner, "ORG-MULTI-SIBLING");
+		addActiveMembership(teammate, owner, siblingOrg);
+		UUID viewerRoleId = roleIdNamed(owner, "Viewer");
+
+		// Before the fix this threw IncorrectResultSizeDataAccessException: the Optional finder matched
+		// both of the teammate's ACTIVE memberships in the tenant.
+		roleService.assignMember(owner, viewerRoleId, teammate.getId());
+
+		UUID callersOrgMembershipId = membershipIdOf(teammate.getId(), owner.organizationId());
+		UUID siblingMembershipId = membershipIdOf(teammate.getId(), siblingOrg.getId());
+		assertThat(userRoleRepository.existsByMembershipIdAndRoleId(callersOrgMembershipId, viewerRoleId)).isTrue();
+		assertThat(userRoleRepository.existsByMembershipIdAndRoleId(siblingMembershipId, viewerRoleId)).isFalse();
+
+		roleService.unassignMember(owner, viewerRoleId, teammate.getId());
+		assertThat(userRoleRepository.existsByMembershipIdAndRoleId(callersOrgMembershipId, viewerRoleId)).isFalse();
 	}
 
 	@Test

@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -125,7 +126,7 @@ public class RoleService {
 	@Transactional
 	public void assignMember(AuthenticatedUser caller, UUID roleId, UUID userId) {
 		Role role = requireRole(caller.tenantId(), roleId);
-		UUID membershipId = requireTenantMembership(caller.tenantId(), userId);
+		UUID membershipId = requireOrganizationMembership(caller, userId);
 
 		if (isOwnerEquivalentRole(role) && !callerHoldsOwnerEquivalent(caller)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -148,8 +149,7 @@ public class RoleService {
 	@Transactional
 	public void unassignMember(AuthenticatedUser caller, UUID roleId, UUID userId) {
 		Role role = requireRole(caller.tenantId(), roleId);
-		UUID membershipId = membershipRepository
-				.findByUserIdAndTenantIdAndStatus(userId, caller.tenantId(), MembershipStatus.ACTIVE)
+		UUID membershipId = activeOrganizationMembership(caller, userId)
 				.map(Membership::getId).orElse(null);
 		if (membershipId == null) {
 			return;
@@ -192,10 +192,20 @@ public class RoleService {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, ROLE_NOT_FOUND));
 	}
 
-	private UUID requireTenantMembership(UUID tenantId, UUID userId) {
-		return membershipRepository.findByUserIdAndTenantIdAndStatus(userId, tenantId, MembershipStatus.ACTIVE)
+	/**
+	 * A role is tenant-scoped but attaches to a per-Organization Membership, and one user can hold
+	 * several ACTIVE Memberships in the tenant (a Tenant Admin across sibling orgs). Resolve the
+	 * target against the caller's currently selected Organization so the assignment is unambiguous.
+	 */
+	private UUID requireOrganizationMembership(AuthenticatedUser caller, UUID userId) {
+		return activeOrganizationMembership(caller, userId)
 				.map(Membership::getId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+	}
+
+	private Optional<Membership> activeOrganizationMembership(AuthenticatedUser caller, UUID userId) {
+		return membershipRepository.findByUserIdAndOrganizationId(userId, caller.organizationId())
+				.filter(membership -> membership.getStatus() == MembershipStatus.ACTIVE);
 	}
 
 	/** Owner and Tenant Admin are both full-access system roles: granting or removing either is guarded. */

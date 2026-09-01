@@ -1,5 +1,6 @@
 package ERP.erpbackend.identity;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class OAuthAccountService {
 	private final MembershipRepository membershipRepository;
 	private final OAuthAccountRepository oAuthAccountRepository;
 	private final SessionTokenIssuer sessionTokenIssuer;
+	private final LoginSelectionService loginSelectionService;
 
 	public AuthorizationUrlResponse buildAuthorizationUrl(UUID linkedUserId) {
 		if (!googleOAuthProperties.configured()) {
@@ -88,16 +90,25 @@ public class OAuthAccountService {
 			return OAuthLoginResult.failure(null);
 		}
 
-		Optional<Membership> membership = membershipRepository.findByUserId(user.get().getId()).stream().findFirst();
-		if (membership.isEmpty()) {
+		// Same 0 / 1 / many handling as AuthenticationService.login: a PENDING-only account cannot sign
+		// in (it was never approved for any Organization), a single ACTIVE Membership goes straight in,
+		// and several route through the Organization Selector rather than a non-deterministic pick.
+		List<Membership> memberships = membershipRepository.findByUserIdAndStatus(
+				user.get().getId(), MembershipStatus.ACTIVE);
+		if (memberships.isEmpty()) {
 			return OAuthLoginResult.failure(null);
 		}
 
-		Session session = sessionTokenIssuer.createSession(user.get(), membership.get(), ClientType.WEB);
-		TokenResponse tokenResponse = sessionTokenIssuer.issueTokens(user.get(), membership.get(), session);
-		String exchangeCode = oAuthLoginExchangeService.issue(tokenResponse);
+		LoginResponse loginResponse = memberships.size() == 1
+				? LoginResponse.authenticated(issueForMembership(user.get(), memberships.getFirst()))
+				: loginSelectionService.beginSelection(user.get().getId(), memberships);
 
-		return OAuthLoginResult.success(exchangeCode);
+		return OAuthLoginResult.success(oAuthLoginExchangeService.issue(loginResponse));
+	}
+
+	private TokenResponse issueForMembership(User user, Membership membership) {
+		Session session = sessionTokenIssuer.createSession(user, membership, ClientType.WEB);
+		return sessionTokenIssuer.issueTokens(user, membership, session);
 	}
 
 	public LinkStatusResponse status(AuthenticatedUser caller) {

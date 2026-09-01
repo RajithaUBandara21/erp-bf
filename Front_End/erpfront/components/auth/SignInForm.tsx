@@ -13,13 +13,20 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 const initialState: SignInFormState = {};
 const initialSelectState: SelectOrganizationState = {};
 
-export function SignInForm() {
+interface SignInFormProps {
+	// Set when a Google sign-in resolved to several organizations: skip the credentials form and go
+	// straight to the same selector the password flow shows.
+	initialSelection?: NonNullable<SignInFormState["selection"]>;
+}
+
+export function SignInForm({ initialSelection }: SignInFormProps) {
 	const locale = useLocale();
 	const t = useTranslations("auth.signIn");
 	const [state, formAction, pending] = useActionState(signIn.bind(null, locale), initialState);
 
-	if (state.selection) {
-		return <OrganizationSelector selection={state.selection} />;
+	const selection = state.selection ?? initialSelection;
+	if (selection) {
+		return <OrganizationSelector selection={selection} />;
 	}
 
 	return (

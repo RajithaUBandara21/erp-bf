@@ -19,11 +19,14 @@ final class AuditLogSpecifications {
 	private AuditLogSpecifications() {
 	}
 
-	static Specification<AuditLog> matching(UUID tenantId, String entityType, String action, UUID userId,
-			Instant from, Instant to) {
+	static Specification<AuditLog> matching(UUID tenantId, UUID organizationId, String entityType, String action,
+			UUID userId, Instant from, Instant to) {
 		return (root, query, cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 			predicates.add(cb.equal(root.get("tenantId"), tenantId));
+			if (organizationId != null) {
+				predicates.add(cb.equal(root.get("organizationId"), organizationId));
+			}
 			if (entityType != null) {
 				predicates.add(cb.equal(root.get("entityType"), entityType));
 			}

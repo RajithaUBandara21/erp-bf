@@ -123,9 +123,19 @@ class AuditLogRepositoryTest {
 		assertThat(found.getAction()).isEqualTo("auth.login_failed");
 	}
 
+	private static AuditLogFilter noFilter() {
+		return new AuditLogFilter(null, null, null, null, null);
+	}
+
 	private AuditLog newAuditLog(UUID tenantId, UUID userId, String entityType, String action, Instant createdAt) {
+		return newAuditLog(tenantId, null, userId, entityType, action, createdAt);
+	}
+
+	private AuditLog newAuditLog(UUID tenantId, UUID organizationId, UUID userId, String entityType, String action,
+			Instant createdAt) {
 		AuditLog auditLog = new AuditLog();
 		auditLog.setTenantId(tenantId);
+		auditLog.setOrganizationId(organizationId);
 		auditLog.setUserId(userId);
 		auditLog.setEntityType(entityType);
 		auditLog.setAction(action);
@@ -142,7 +152,6 @@ class AuditLogRepositoryTest {
 	@Test
 	void searchFiltersByEntityTypeActionActorAndDateRangeWithinTenant() {
 		Tenant tenant = newTenant("TEN-AUD-3");
-		Organization organization = newOrganization(tenant, "ORG-AUD-3");
 		User actor = newUser("actor3@acme.test");
 		Tenant otherTenant = newTenant("TEN-AUD-4");
 
@@ -157,36 +166,59 @@ class AuditLogRepositoryTest {
 
 		Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-		Page<AuditLog> byEntityType = auditLogRepository.search(tenant.getId(), "Role", null, null, null, null,
-				pageable);
+		Page<AuditLog> byEntityType = auditLogRepository.search(tenant.getId(), null,
+				new AuditLogFilter("Role", null, null, null, null), pageable);
 		assertThat(byEntityType.getContent()).extracting(AuditLog::getId)
 				.containsExactly(roleUpdated.getId(), roleCreated.getId());
 
-		Page<AuditLog> byAction = auditLogRepository.search(tenant.getId(), null, "auth.login", null, null, null,
-				pageable);
+		Page<AuditLog> byAction = auditLogRepository.search(tenant.getId(), null,
+				new AuditLogFilter(null, "auth.login", null, null, null), pageable);
 		assertThat(byAction.getContent()).extracting(AuditLog::getId).containsExactly(login.getId());
 
-		Page<AuditLog> byActor = auditLogRepository.search(tenant.getId(), null, null, actor.getId(), null, null,
-				pageable);
+		Page<AuditLog> byActor = auditLogRepository.search(tenant.getId(), null,
+				new AuditLogFilter(null, null, actor.getId(), null, null), pageable);
 		assertThat(byActor.getContent()).hasSize(3);
 
-		Page<AuditLog> byDateRange = auditLogRepository.search(tenant.getId(), null, null, null, day2, day3,
-				pageable);
+		Page<AuditLog> byDateRange = auditLogRepository.search(tenant.getId(), null,
+				new AuditLogFilter(null, null, null, day2, day3), pageable);
 		assertThat(byDateRange.getContent()).extracting(AuditLog::getId)
 				.containsExactly(login.getId(), roleUpdated.getId());
 
-		Page<AuditLog> combined = auditLogRepository.search(tenant.getId(), "Role", "role.updated", actor.getId(),
-				day1, day3, pageable);
+		Page<AuditLog> combined = auditLogRepository.search(tenant.getId(), null,
+				new AuditLogFilter("Role", "role.updated", actor.getId(), day1, day3), pageable);
 		assertThat(combined.getContent()).extracting(AuditLog::getId).containsExactly(roleUpdated.getId());
 
-		Page<AuditLog> noMatch = auditLogRepository.search(tenant.getId(), "Product", null, null, null, null,
-				pageable);
+		Page<AuditLog> noMatch = auditLogRepository.search(tenant.getId(), null,
+				new AuditLogFilter("Product", null, null, null, null), pageable);
 		assertThat(noMatch.getContent()).isEmpty();
 
-		Page<AuditLog> allForTenant = auditLogRepository.search(tenant.getId(), null, null, null, null, null,
-				pageable);
+		Page<AuditLog> allForTenant = auditLogRepository.search(tenant.getId(), null, noFilter(), pageable);
 		assertThat(allForTenant.getContent()).extracting(AuditLog::getId)
 				.containsExactly(login.getId(), roleUpdated.getId(), roleCreated.getId());
+	}
+
+	@Test
+	void searchScopedToAnOrganizationExcludesSiblingOrganizationRowsUnderTheSameTenant() {
+		Tenant tenant = newTenant("TEN-AUD-ORG");
+		Organization orgA = newOrganization(tenant, "ORG-AUD-A");
+		Organization orgB = newOrganization(tenant, "ORG-AUD-B");
+
+		Instant day1 = Instant.parse("2026-08-01T00:00:00Z");
+		Instant day2 = Instant.parse("2026-08-02T00:00:00Z");
+		Instant day3 = Instant.parse("2026-08-03T00:00:00Z");
+
+		AuditLog orgARow = newAuditLog(tenant.getId(), orgA.getId(), null, "Role", "role.created", day1);
+		AuditLog orgBRow = newAuditLog(tenant.getId(), orgB.getId(), null, "Role", "role.created", day2);
+		AuditLog tenantLevelRow = newAuditLog(tenant.getId(), null, null, "Session", "auth.login", day3);
+
+		Pageable pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+		Page<AuditLog> scopedToOrgA = auditLogRepository.search(tenant.getId(), orgA.getId(), noFilter(), pageable);
+		assertThat(scopedToOrgA.getContent()).extracting(AuditLog::getId).containsExactly(orgARow.getId());
+
+		Page<AuditLog> tenantWide = auditLogRepository.search(tenant.getId(), null, noFilter(), pageable);
+		assertThat(tenantWide.getContent()).extracting(AuditLog::getId)
+				.containsExactly(tenantLevelRow.getId(), orgBRow.getId(), orgARow.getId());
 	}
 
 	@Test
@@ -201,13 +233,13 @@ class AuditLogRepositoryTest {
 		AuditLog third = newAuditLog(tenant.getId(), null, "Role", "role.created", day3);
 
 		Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
-		Page<AuditLog> pageOne = auditLogRepository.search(tenant.getId(), null, null, null, null, null,
+		Page<AuditLog> pageOne = auditLogRepository.search(tenant.getId(), null, noFilter(),
 				PageRequest.of(0, 2, sort));
 		assertThat(pageOne.getContent()).extracting(AuditLog::getId).containsExactly(third.getId(), second.getId());
 		assertThat(pageOne.getTotalElements()).isEqualTo(3);
 		assertThat(pageOne.getTotalPages()).isEqualTo(2);
 
-		Page<AuditLog> pageTwo = auditLogRepository.search(tenant.getId(), null, null, null, null, null,
+		Page<AuditLog> pageTwo = auditLogRepository.search(tenant.getId(), null, noFilter(),
 				PageRequest.of(1, 2, sort));
 		assertThat(pageTwo.getContent()).extracting(AuditLog::getId).containsExactly(first.getId());
 	}

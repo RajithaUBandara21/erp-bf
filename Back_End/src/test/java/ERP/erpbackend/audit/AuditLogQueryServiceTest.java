@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ERP.erpbackend.identity.AuthenticatedUser;
+import ERP.erpbackend.identity.TenantAdminAccessService;
 import ERP.erpbackend.identity.UserDirectoryService;
 import ERP.erpbackend.identity.UserSummaryResponse;
 import ERP.erpbackend.organization.OrganizationService;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +30,9 @@ class AuditLogQueryServiceTest {
 	private final AuditLogRepository auditLogRepository = mock(AuditLogRepository.class);
 	private final UserDirectoryService userDirectoryService = mock(UserDirectoryService.class);
 	private final OrganizationService organizationService = mock(OrganizationService.class);
+	private final TenantAdminAccessService tenantAdminAccessService = mock(TenantAdminAccessService.class);
 	private final AuditLogQueryService auditLogQueryService = new AuditLogQueryService(
-			auditLogRepository, userDirectoryService, organizationService, new JsonMapper());
+			auditLogRepository, userDirectoryService, organizationService, tenantAdminAccessService, new JsonMapper());
 
 	private static final AuthenticatedUser CALLER = new AuthenticatedUser(
 			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID(),
@@ -50,6 +54,12 @@ class AuditLogQueryServiceTest {
 		return log;
 	}
 
+	private void stubSearchReturning(AuditLog... logs) {
+		Pageable pageable = PageRequest.of(0, 20);
+		when(auditLogRepository.search(eq(CALLER.tenantId()), any(), any(AuditLogFilter.class), any(Pageable.class)))
+				.thenReturn(new PageImpl<>(List.of(logs), pageable, logs.length));
+	}
+
 	@Test
 	void enrichesResultsWithResolvedActorAndOrganizationNames() {
 		UUID entryId = UUID.randomUUID();
@@ -58,8 +68,7 @@ class AuditLogQueryServiceTest {
 		AuditLog log = auditLogWith(entryId, actorId, organizationId, "{\"name\":\"Cashier\"}",
 				"{\"name\":\"Cashier Lead\"}");
 		Pageable pageable = PageRequest.of(0, 20);
-		when(auditLogRepository.search(eq(CALLER.tenantId()), any(), any(), any(), any(), any(), eq(pageable)))
-				.thenReturn(new PageImpl<>(List.of(log), pageable, 1));
+		stubSearchReturning(log);
 		when(userDirectoryService.findSummariesByIds(Set.of(actorId)))
 				.thenReturn(Map.of(actorId, new UserSummaryResponse(actorId, "R. Haritha", "r.haritha@acme.test")));
 		when(organizationService.findNamesByIds(Set.of(organizationId)))
@@ -86,8 +95,7 @@ class AuditLogQueryServiceTest {
 		UUID deletedOrgId = UUID.randomUUID();
 		AuditLog log = auditLogWith(entryId, deletedActorId, deletedOrgId, null, null);
 		Pageable pageable = PageRequest.of(0, 20);
-		when(auditLogRepository.search(eq(CALLER.tenantId()), any(), any(), any(), any(), any(), eq(pageable)))
-				.thenReturn(new PageImpl<>(List.of(log), pageable, 1));
+		stubSearchReturning(log);
 		when(userDirectoryService.findSummariesByIds(Set.of(deletedActorId))).thenReturn(Map.of());
 		when(organizationService.findNamesByIds(Set.of(deletedOrgId))).thenReturn(Map.of());
 
@@ -107,8 +115,7 @@ class AuditLogQueryServiceTest {
 		UUID entryId = UUID.randomUUID();
 		AuditLog log = auditLogWith(entryId, null, null, null, null);
 		Pageable pageable = PageRequest.of(0, 20);
-		when(auditLogRepository.search(eq(CALLER.tenantId()), any(), any(), any(), any(), any(), eq(pageable)))
-				.thenReturn(new PageImpl<>(List.of(log), pageable, 1));
+		stubSearchReturning(log);
 		when(userDirectoryService.findSummariesByIds(Set.of())).thenReturn(Map.of());
 		when(organizationService.findNamesByIds(Set.of())).thenReturn(Map.of());
 
@@ -117,6 +124,33 @@ class AuditLogQueryServiceTest {
 
 		assertThat(result.content().get(0).actorName()).isNull();
 		assertThat(result.content().get(0).organizationName()).isNull();
+	}
+
+	@Test
+	void scopesTheQueryToTheCallersOwnOrganizationForANonTenantAdmin() {
+		when(tenantAdminAccessService.isTenantAdmin(CALLER.userId(), CALLER.tenantId())).thenReturn(false);
+		stubSearchReturning();
+
+		auditLogQueryService.search(CALLER, new AuditLogFilter(null, null, null, null, null), PageRequest.of(0, 20));
+
+		assertThat(capturedOrganizationScope()).isEqualTo(CALLER.organizationId());
+	}
+
+	@Test
+	void widensTheQueryToTheWholeTenantForATenantAdmin() {
+		when(tenantAdminAccessService.isTenantAdmin(CALLER.userId(), CALLER.tenantId())).thenReturn(true);
+		stubSearchReturning();
+
+		auditLogQueryService.search(CALLER, new AuditLogFilter(null, null, null, null, null), PageRequest.of(0, 20));
+
+		assertThat(capturedOrganizationScope()).isNull();
+	}
+
+	private UUID capturedOrganizationScope() {
+		ArgumentCaptor<UUID> organizationScope = ArgumentCaptor.forClass(UUID.class);
+		verify(auditLogRepository).search(eq(CALLER.tenantId()), organizationScope.capture(),
+				any(AuditLogFilter.class), any(Pageable.class));
+		return organizationScope.getValue();
 	}
 
 }

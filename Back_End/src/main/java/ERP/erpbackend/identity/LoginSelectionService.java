@@ -1,6 +1,10 @@
 package ERP.erpbackend.identity;
 
+import ERP.erpbackend.organization.OrganizationService;
 import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,26 @@ public class LoginSelectionService {
 	private static final Duration TTL = Duration.ofMinutes(5);
 
 	private final StringRedisTemplate redisTemplate;
+	private final OrganizationService organizationService;
+
+	/**
+	 * Start a two-step login: issue a selection token for {@code userId} and pair it with the
+	 * Organizations they can choose between. Shared by password login and Google sign-in so both
+	 * present the same Organization Selector.
+	 */
+	public LoginResponse beginSelection(UUID userId, List<Membership> memberships) {
+		return LoginResponse.selectOrganization(issue(userId), toOptions(memberships));
+	}
+
+	private List<MembershipOption> toOptions(List<Membership> memberships) {
+		Map<UUID, String> names = organizationService.findNamesByIds(
+				memberships.stream().map(Membership::getOrganizationId).toList());
+		return memberships.stream()
+				.map(membership -> new MembershipOption(membership.getId(), membership.getOrganizationId(),
+						names.getOrDefault(membership.getOrganizationId(), "")))
+				.sorted(Comparator.comparing(MembershipOption::organizationName, String.CASE_INSENSITIVE_ORDER))
+				.toList();
+	}
 
 	public String issue(UUID userId) {
 		String token = SecureRandomToken.generate(TOKEN_BYTES);

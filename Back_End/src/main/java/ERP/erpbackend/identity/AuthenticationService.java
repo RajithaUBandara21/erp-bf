@@ -1,11 +1,8 @@
 package ERP.erpbackend.identity;
 
-import ERP.erpbackend.organization.OrganizationService;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +23,6 @@ public class AuthenticationService {
 	private static final String DUMMY_PASSWORD_HASH =
 			"$2a$10$rj1PzUggzShtDluMqkrXZ.JRijLCAjBsdaPs5nbO6M66EzAE2gyS2";
 
-	private final OrganizationService organizationService;
 	private final UserRepository userRepository;
 	private final MembershipRepository membershipRepository;
 	private final SessionRepository sessionRepository;
@@ -62,8 +58,7 @@ public class AuthenticationService {
 					issueForMembership(user.get(), memberships.getFirst(), request.clientType()));
 		}
 
-		String selectionToken = loginSelectionService.issue(user.get().getId());
-		return LoginResponse.selectOrganization(selectionToken, toOptions(memberships));
+		return loginSelectionService.beginSelection(user.get().getId(), memberships);
 	}
 
 	public TokenResponse selectOrganization(LoginSelectRequest request) {
@@ -120,16 +115,6 @@ public class AuthenticationService {
 	private TokenResponse issueForMembership(User user, Membership membership, ClientType clientType) {
 		Session session = sessionTokenIssuer.createSession(user, membership, clientType);
 		return sessionTokenIssuer.issueTokens(user, membership, session);
-	}
-
-	private List<MembershipOption> toOptions(List<Membership> memberships) {
-		Map<UUID, String> names = organizationService.findNamesByIds(
-				memberships.stream().map(Membership::getOrganizationId).toList());
-		return memberships.stream()
-				.map(membership -> new MembershipOption(membership.getId(), membership.getOrganizationId(),
-						names.getOrDefault(membership.getOrganizationId(), "")))
-				.sorted(Comparator.comparing(MembershipOption::organizationName, String.CASE_INSENSITIVE_ORDER))
-				.toList();
 	}
 
 	private static boolean isUsable(Session session) {

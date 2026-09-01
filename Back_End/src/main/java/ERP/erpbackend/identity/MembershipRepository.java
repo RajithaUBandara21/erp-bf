@@ -15,8 +15,6 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
 
 	Optional<Membership> findByUserIdAndOrganizationId(UUID userId, UUID organizationId);
 
-	Optional<Membership> findByUserIdAndTenantIdAndStatus(UUID userId, UUID tenantId, MembershipStatus status);
-
 	List<Membership> findByTenantIdAndStatus(UUID tenantId, MembershipStatus status);
 
 	/** True when the user holds an ACTIVE Membership in the tenant that is assigned the named system role. */
