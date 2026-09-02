@@ -27,9 +27,9 @@ class UserDirectoryServiceImpl implements UserDirectoryService {
 	}
 
 	@Override
-	public List<UserSummaryResponse> listActiveTenantMembers(UUID tenantId) {
-		List<UUID> userIds = membershipRepository.findByTenantIdAndStatus(tenantId, MembershipStatus.ACTIVE).stream()
-				.map(Membership::getUserId).toList();
+	public List<UserSummaryResponse> listActiveOrganizationMembers(UUID organizationId) {
+		List<UUID> userIds = membershipRepository.findByOrganizationIdAndStatus(organizationId, MembershipStatus.ACTIVE)
+				.stream().map(Membership::getUserId).toList();
 		if (userIds.isEmpty()) {
 			return List.of();
 		}

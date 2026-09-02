@@ -4,6 +4,7 @@ import ERP.erpbackend.audit.AuditEvent;
 import ERP.erpbackend.audit.AuditService;
 import ERP.erpbackend.organization.OrganizationService;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 @RequiredArgsConstructor
-public class TenantAdminAccessService {
+public class TenantAdminAccessService implements TenantAdminChecker {
 
 	private final OrganizationService organizationService;
 	private final MembershipRepository membershipRepository;
@@ -29,10 +30,16 @@ public class TenantAdminAccessService {
 	private final UserRoleRepository userRoleRepository;
 	private final AuditService auditService;
 
-	/** True when the user holds an ACTIVE Membership in the tenant that is assigned the tenant's system Tenant Admin role. */
+	@Override
 	public boolean isTenantAdmin(UUID userId, UUID tenantId) {
 		return membershipRepository.existsActiveMembershipAssignedSystemRole(
 				userId, tenantId, SystemRole.TENANT_ADMIN.displayName());
+	}
+
+	/** Every tenant the user administers, resolved in a single query (vs. one {@link #isTenantAdmin} call per tenant). */
+	public Set<UUID> administeredTenantIds(UUID userId) {
+		return membershipRepository.findTenantIdsWithActiveMembershipAssignedSystemRole(
+				userId, SystemRole.TENANT_ADMIN.displayName());
 	}
 
 	/**

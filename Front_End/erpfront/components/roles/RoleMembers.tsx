@@ -9,12 +9,12 @@ import { initials } from "@/components/roles/RoleMembersList";
 interface RoleMembersProps {
 	roleId: string;
 	members: RoleMember[];
-	/** Tenant users offered in the "add member" picker (already-assigned users are filtered out here). */
+	/** Organization users offered in the "add member" picker (already-assigned users are filtered out here). */
 	candidates: UserSummary[];
 	canEdit: boolean;
 }
 
-/** Interactive Members panel: list, remove a member, add one from the tenant directory. */
+/** Interactive Members panel: list, remove a member, add one from the organization directory. */
 export function RoleMembers({ roleId, members, candidates, canEdit }: RoleMembersProps) {
 	const locale = useLocale();
 	const t = useTranslations("roles.members");

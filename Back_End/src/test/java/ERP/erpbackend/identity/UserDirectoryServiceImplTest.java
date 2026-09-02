@@ -79,28 +79,29 @@ class UserDirectoryServiceImplTest {
 	}
 
 	@Test
-	void listActiveTenantMembersReturnsMembersOrderedByFullName() {
-		UUID tenantId = UUID.randomUUID();
+	void listActiveOrganizationMembersReturnsMembersOrderedByFullName() {
+		UUID organizationId = UUID.randomUUID();
 		UUID graceId = UUID.randomUUID();
 		UUID adaId = UUID.randomUUID();
-		when(membershipRepository.findByTenantIdAndStatus(tenantId, MembershipStatus.ACTIVE))
+		when(membershipRepository.findByOrganizationIdAndStatus(organizationId, MembershipStatus.ACTIVE))
 				.thenReturn(List.of(membershipFor(graceId), membershipFor(adaId)));
 		when(userRepository.findAllById(List.of(graceId, adaId))).thenReturn(List.of(
 				userWith(graceId, "Grace Hopper", "grace@acme.test"),
 				userWith(adaId, "Ada Lovelace", "ada@acme.test")));
 
-		List<UserSummaryResponse> members = userDirectoryService.listActiveTenantMembers(tenantId);
+		List<UserSummaryResponse> members = userDirectoryService.listActiveOrganizationMembers(organizationId);
 
 		assertThat(members).extracting(UserSummaryResponse::fullName)
 				.containsExactly("Ada Lovelace", "Grace Hopper");
 	}
 
 	@Test
-	void listActiveTenantMembersShortCircuitsWhenTenantHasNoMembers() {
-		UUID tenantId = UUID.randomUUID();
-		when(membershipRepository.findByTenantIdAndStatus(tenantId, MembershipStatus.ACTIVE)).thenReturn(List.of());
+	void listActiveOrganizationMembersShortCircuitsWhenOrganizationHasNoMembers() {
+		UUID organizationId = UUID.randomUUID();
+		when(membershipRepository.findByOrganizationIdAndStatus(organizationId, MembershipStatus.ACTIVE))
+				.thenReturn(List.of());
 
-		assertThat(userDirectoryService.listActiveTenantMembers(tenantId)).isEmpty();
+		assertThat(userDirectoryService.listActiveOrganizationMembers(organizationId)).isEmpty();
 		verifyNoInteractions(userRepository);
 	}
 

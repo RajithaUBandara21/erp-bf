@@ -27,6 +27,12 @@ export type LoginResponse =
 	| { outcome: "AUTHENTICATED"; session: TokenResponse; selectionToken: null; organizations: null }
 	| { outcome: "SELECT_ORGANIZATION"; session: null; selectionToken: string; organizations: MembershipOption[] };
 
+/** `200` body of `POST /api/auth/verify-email` - a human-readable status message plus the Organization name. */
+export interface VerifyEmailResponse {
+	message: string;
+	organizationName: string;
+}
+
 export interface ErrorResponse {
 	message: string;
 	errors: Record<string, string>;

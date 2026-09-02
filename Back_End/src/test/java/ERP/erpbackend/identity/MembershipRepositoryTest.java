@@ -33,6 +33,12 @@ class MembershipRepositoryTest {
 	@Autowired
 	private MembershipRepository membershipRepository;
 
+	@Autowired
+	private RoleRepository roleRepository;
+
+	@Autowired
+	private UserRoleRepository userRoleRepository;
+
 	private Tenant tenant(String code) {
 		Tenant tenant = new Tenant();
 		tenant.setName(code);
@@ -63,6 +69,20 @@ class MembershipRepositoryTest {
 		membership.setOrganizationId(organization.getId());
 		membership.setStatus(MembershipStatus.ACTIVE);
 		return membership;
+	}
+
+	private void assignSystemRole(Tenant tenant, Membership membership, String roleName) {
+		Role role = new Role();
+		role.setTenantId(tenant.getId());
+		role.setName(roleName);
+		role.setSystemManaged(true);
+		role = roleRepository.saveAndFlush(role);
+
+		UserRole assignment = new UserRole();
+		assignment.setTenantId(tenant.getId());
+		assignment.setMembershipId(membership.getId());
+		assignment.setRoleId(role.getId());
+		userRoleRepository.saveAndFlush(assignment);
 	}
 
 	@Test
@@ -109,6 +129,32 @@ class MembershipRepositoryTest {
 				.contains(saved.getId());
 		assertThat(membershipRepository.findByUserIdAndOrganizationId(user.getId(), java.util.UUID.randomUUID()))
 				.isEmpty();
+	}
+
+	@Test
+	void findsOnlyTenantsWhereTheUserHoldsAnActiveMembershipWithTheNamedSystemRole() {
+		String roleName = SystemRole.TENANT_ADMIN.displayName();
+		User user = user("ta-tenant-set@acme.test");
+
+		Tenant adminTenant = tenant("TEN-MEM-TA-1");
+		Membership adminMembership = membershipRepository.saveAndFlush(
+				membership(adminTenant, organization(adminTenant, "ORG-MEM-TA-1"), user));
+		assignSystemRole(adminTenant, adminMembership, roleName);
+
+		// Same user, plain ACTIVE membership in a second tenant - no Tenant Admin role there.
+		Tenant plainTenant = tenant("TEN-MEM-TA-2");
+		membershipRepository.saveAndFlush(
+				membership(plainTenant, organization(plainTenant, "ORG-MEM-TA-2"), user));
+
+		// A PENDING membership carrying the role must not count.
+		Tenant pendingTenant = tenant("TEN-MEM-TA-3");
+		Membership pendingMembership = membership(pendingTenant, organization(pendingTenant, "ORG-MEM-TA-3"), user);
+		pendingMembership.setStatus(MembershipStatus.PENDING);
+		pendingMembership = membershipRepository.saveAndFlush(pendingMembership);
+		assignSystemRole(pendingTenant, pendingMembership, roleName);
+
+		assertThat(membershipRepository.findTenantIdsWithActiveMembershipAssignedSystemRole(user.getId(), roleName))
+				.containsExactly(adminTenant.getId());
 	}
 
 	@Test

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Read-only tenant user directory that backs the role member picker. Tenant is taken from the security context only. */
+/** Read-only user directory that backs the role member picker. Organization is taken from the security context only. */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -20,7 +20,7 @@ public class UserDirectoryController {
 	@GetMapping("/users")
 	@PreAuthorize("@perms.has('user.view')")
 	public ResponseEntity<List<UserSummaryResponse>> list(@AuthenticationPrincipal AuthenticatedUser caller) {
-		return ResponseEntity.ok(userDirectoryService.listActiveTenantMembers(caller.tenantId()));
+		return ResponseEntity.ok(userDirectoryService.listActiveOrganizationMembers(caller.organizationId()));
 	}
 
 }

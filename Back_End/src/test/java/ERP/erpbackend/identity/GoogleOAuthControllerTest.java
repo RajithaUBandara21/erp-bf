@@ -107,7 +107,10 @@ class GoogleOAuthControllerTest {
 	}
 
 	private Authentication authenticationFor(User user) {
-		Membership membership = membershipOf(user);
+		return authenticationFor(user, membershipOf(user));
+	}
+
+	private Authentication authenticationFor(User user, Membership membership) {
 		AuthenticatedUser principal = new AuthenticatedUser(
 				user.getId(), membership.getTenantId(), membership.getOrganizationId(), user.getEmail(),
 				UUID.randomUUID(), membership.getId());
@@ -121,7 +124,6 @@ class GoogleOAuthControllerTest {
 
 	private void linkUser(User user, String providerUserId, String providerEmail) {
 		OAuthAccount account = new OAuthAccount();
-		account.setTenantId(membershipOf(user).getTenantId());
 		account.setUserId(user.getId());
 		account.setProvider(OAuthProvider.GOOGLE);
 		account.setProviderUserId(providerUserId);
@@ -135,14 +137,14 @@ class GoogleOAuthControllerTest {
 		membershipRepository.save(membership);
 	}
 
-	private void addSecondActiveMembership(User user) {
+	private Membership addSecondActiveMembership(User user) {
 		TenantOrganization second = organizationService.createTenantAndOrganization("Second for " + user.getEmail());
 		Membership membership = new Membership();
 		membership.setUserId(user.getId());
 		membership.setTenantId(second.tenantId());
 		membership.setOrganizationId(second.organizationId());
 		membership.setStatus(MembershipStatus.ACTIVE);
-		membershipRepository.save(membership);
+		return membershipRepository.save(membership);
 	}
 
 	private String loginExchangeCode(GoogleIdentity identity, String authCode) throws Exception {
@@ -247,7 +249,7 @@ class GoogleOAuthControllerTest {
 				.andExpect(header().string("Location", FRONTEND_BASE_URL + "/settings?oauth=linked"));
 
 		OAuthAccount account = oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(membershipOf(user).getTenantId(), user.getId(), OAuthProvider.GOOGLE)
+				.findByUserIdAndProvider(user.getId(), OAuthProvider.GOOGLE)
 				.orElseThrow();
 		assertThat(account.getProviderUserId()).isEqualTo("round-trip-sub");
 
@@ -421,6 +423,30 @@ class GoogleOAuthControllerTest {
 		mockMvc.perform(get("/api/auth/oauth/google").with(authentication(authenticationFor(user))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.linked").value(false));
+	}
+
+	@Test
+	void statusAndUnlinkResolveByUserRegardlessOfTheCallersActiveTenant() throws Exception {
+		User user = registerUser("cross-tenant-oauth@acme.test");
+		Membership afterSwitch = addSecondActiveMembership(user);
+
+		// Link Google while the session is scoped to the first tenant/org.
+		GoogleIdentity identity = new GoogleIdentity("cross-tenant-sub", user.getEmail(), true);
+		when(googleTokenExchangeClient.exchange("link-code")).thenReturn(identity);
+		String linkState = oAuthStateService.issue(user.getId());
+		mockMvc.perform(get("/api/auth/oauth/google/callback").param("code", "link-code").param("state", linkState))
+				.andExpect(header().string("Location", FRONTEND_BASE_URL + "/settings?oauth=linked"));
+
+		// After switching to the second Organization, Settings still reports the link and unlink still works.
+		mockMvc.perform(get("/api/auth/oauth/google").with(authentication(authenticationFor(user, afterSwitch))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.linked").value(true))
+				.andExpect(jsonPath("$.linkedEmail").value(user.getEmail()));
+
+		mockMvc.perform(delete("/api/auth/oauth/google").with(authentication(authenticationFor(user, afterSwitch))))
+				.andExpect(status().isNoContent());
+
+		assertThat(oAuthAccountRepository.findByUserIdAndProvider(user.getId(), OAuthProvider.GOOGLE)).isEmpty();
 	}
 
 	@Test

@@ -98,6 +98,12 @@
 			"emailUnverified": "Your Google account''s email isn''t verified. Verify it with Google, then try again.",
 			"alreadyLinked": "This Google account is already linked to a different user.",
 			"signInFailed": "Google sign-in failed. Please try again."
+		},
+		"verifyEmail": {
+			"title": "Verify your email",
+			"description": "Confirming your request to join an organization",
+			"missingToken": "This verification link is invalid or has expired. Ask the organization for a new invite.",
+			"backToSignIn": "Back to sign in"
 		}
 	},
 	"settings": {

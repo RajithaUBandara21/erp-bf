@@ -1,7 +1,7 @@
 package ERP.erpbackend.audit;
 
 import ERP.erpbackend.identity.AuthenticatedUser;
-import ERP.erpbackend.identity.TenantAdminAccessService;
+import ERP.erpbackend.identity.TenantAdminChecker;
 import ERP.erpbackend.identity.UserDirectoryService;
 import ERP.erpbackend.identity.UserSummaryResponse;
 import ERP.erpbackend.organization.OrganizationService;
@@ -28,14 +28,14 @@ public class AuditLogQueryService {
 	private final AuditLogRepository auditLogRepository;
 	private final UserDirectoryService userDirectoryService;
 	private final OrganizationService organizationService;
-	private final TenantAdminAccessService tenantAdminAccessService;
+	private final TenantAdminChecker tenantAdminChecker;
 	private final ObjectMapper objectMapper;
 
 	public AuditLogPageResponse search(AuthenticatedUser caller, AuditLogFilter filter, Pageable pageable) {
 		// Organizations under one Tenant are fully data-isolated, so a caller sees only their own
 		// Organization's trail. A Tenant Admin, whose remit spans every Organization under the Tenant,
 		// gets the tenant-wide view (feature 6 widens this further for PLATFORM_SUPER_ADMIN).
-		UUID organizationScope = tenantAdminAccessService.isTenantAdmin(caller.userId(), caller.tenantId())
+		UUID organizationScope = tenantAdminChecker.isTenantAdmin(caller.userId(), caller.tenantId())
 				? null
 				: caller.organizationId();
 		Page<AuditLog> page = auditLogRepository.search(caller.tenantId(), organizationScope, filter, pageable);

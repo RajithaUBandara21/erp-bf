@@ -52,12 +52,6 @@ public class OAuthAccountService {
 			return OAuthLinkResult.failure(null);
 		}
 
-		Optional<Membership> membership = membershipRepository.findByUserId(userId).stream().findFirst();
-		if (membership.isEmpty()) {
-			return OAuthLinkResult.failure(null);
-		}
-		UUID tenantId = membership.get().getTenantId();
-
 		Optional<OAuthAccount> linkedToAnotherUser = oAuthAccountRepository
 				.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, identity.providerUserId())
 				.filter(account -> !account.getUserId().equals(userId));
@@ -66,9 +60,8 @@ public class OAuthAccountService {
 		}
 
 		OAuthAccount account = oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(tenantId, userId, OAuthProvider.GOOGLE)
+				.findByUserIdAndProvider(userId, OAuthProvider.GOOGLE)
 				.orElseGet(OAuthAccount::new);
-		account.setTenantId(tenantId);
 		account.setUserId(userId);
 		account.setProvider(OAuthProvider.GOOGLE);
 		account.setProviderUserId(identity.providerUserId());
@@ -113,14 +106,13 @@ public class OAuthAccountService {
 
 	public LinkStatusResponse status(AuthenticatedUser caller) {
 		return oAuthAccountRepository
-				.findByTenantIdAndUserIdAndProvider(caller.tenantId(), caller.userId(), OAuthProvider.GOOGLE)
+				.findByUserIdAndProvider(caller.userId(), OAuthProvider.GOOGLE)
 				.map(account -> new LinkStatusResponse(true, account.getProviderEmail()))
 				.orElseGet(() -> new LinkStatusResponse(false, null));
 	}
 
 	public void unlink(AuthenticatedUser caller) {
-		oAuthAccountRepository.deleteByTenantIdAndUserIdAndProvider(
-				caller.tenantId(), caller.userId(), OAuthProvider.GOOGLE);
+		oAuthAccountRepository.deleteByUserIdAndProvider(caller.userId(), OAuthProvider.GOOGLE);
 	}
 
 }

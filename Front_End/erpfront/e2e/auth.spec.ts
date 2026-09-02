@@ -11,6 +11,16 @@ test("sign-in form shows a field error for each empty required field", async ({ 
   await expect(page.getByText("Password is required.")).toBeVisible();
 });
 
+test("verify-email link renders its own page instead of redirecting an unauthenticated visitor to sign-in", async ({
+  page,
+}) => {
+  await page.goto("/en/verify-email?token=some-token");
+
+  await expect(page).toHaveURL(/\/en\/verify-email/);
+  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to sign in" })).toBeVisible();
+});
+
 test("sign-up form flags a weak password, a mismatched confirmation, and unchecked terms", async ({ page }) => {
   await page.goto("/sign-up");
 

@@ -11,7 +11,7 @@ public interface UserDirectoryService {
 	/** Summaries for the given user ids, keyed by id. A missing/deleted id is simply absent from the result. */
 	Map<UUID, UserSummaryResponse> findSummariesByIds(Collection<UUID> userIds);
 
-	/** Active members of one tenant, ordered by full name - backs {@code GET /api/users}. */
-	List<UserSummaryResponse> listActiveTenantMembers(UUID tenantId);
+	/** Active members of one organization, ordered by full name - backs {@code GET /api/users}. */
+	List<UserSummaryResponse> listActiveOrganizationMembers(UUID organizationId);
 
 }

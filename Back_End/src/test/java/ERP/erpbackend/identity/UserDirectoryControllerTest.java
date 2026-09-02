@@ -56,10 +56,10 @@ class UserDirectoryControllerTest {
 	}
 
 	@Test
-	void listReturnsTenantUsersWhenCallerHasUserView() throws Exception {
+	void listReturnsOrganizationUsersWhenCallerHasUserView() throws Exception {
 		UUID adaId = UUID.randomUUID();
 		when(perms.has("user.view")).thenReturn(true);
-		when(userDirectoryService.listActiveTenantMembers(PRINCIPAL.tenantId())).thenReturn(List.of(
+		when(userDirectoryService.listActiveOrganizationMembers(PRINCIPAL.organizationId())).thenReturn(List.of(
 				new UserSummaryResponse(adaId, "Ada Lovelace", "ada@acme.test"),
 				new UserSummaryResponse(UUID.randomUUID(), "Grace Hopper", "grace@acme.test")));
 

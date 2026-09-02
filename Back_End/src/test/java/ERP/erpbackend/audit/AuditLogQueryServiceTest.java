@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ERP.erpbackend.identity.AuthenticatedUser;
-import ERP.erpbackend.identity.TenantAdminAccessService;
+import ERP.erpbackend.identity.TenantAdminChecker;
 import ERP.erpbackend.identity.UserDirectoryService;
 import ERP.erpbackend.identity.UserSummaryResponse;
 import ERP.erpbackend.organization.OrganizationService;
@@ -30,9 +30,9 @@ class AuditLogQueryServiceTest {
 	private final AuditLogRepository auditLogRepository = mock(AuditLogRepository.class);
 	private final UserDirectoryService userDirectoryService = mock(UserDirectoryService.class);
 	private final OrganizationService organizationService = mock(OrganizationService.class);
-	private final TenantAdminAccessService tenantAdminAccessService = mock(TenantAdminAccessService.class);
+	private final TenantAdminChecker tenantAdminChecker = mock(TenantAdminChecker.class);
 	private final AuditLogQueryService auditLogQueryService = new AuditLogQueryService(
-			auditLogRepository, userDirectoryService, organizationService, tenantAdminAccessService, new JsonMapper());
+			auditLogRepository, userDirectoryService, organizationService, tenantAdminChecker, new JsonMapper());
 
 	private static final AuthenticatedUser CALLER = new AuthenticatedUser(
 			UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ada@acme.test", UUID.randomUUID(),
@@ -128,7 +128,7 @@ class AuditLogQueryServiceTest {
 
 	@Test
 	void scopesTheQueryToTheCallersOwnOrganizationForANonTenantAdmin() {
-		when(tenantAdminAccessService.isTenantAdmin(CALLER.userId(), CALLER.tenantId())).thenReturn(false);
+		when(tenantAdminChecker.isTenantAdmin(CALLER.userId(), CALLER.tenantId())).thenReturn(false);
 		stubSearchReturning();
 
 		auditLogQueryService.search(CALLER, new AuditLogFilter(null, null, null, null, null), PageRequest.of(0, 20));
@@ -138,7 +138,7 @@ class AuditLogQueryServiceTest {
 
 	@Test
 	void widensTheQueryToTheWholeTenantForATenantAdmin() {
-		when(tenantAdminAccessService.isTenantAdmin(CALLER.userId(), CALLER.tenantId())).thenReturn(true);
+		when(tenantAdminChecker.isTenantAdmin(CALLER.userId(), CALLER.tenantId())).thenReturn(true);
 		stubSearchReturning();
 
 		auditLogQueryService.search(CALLER, new AuditLogFilter(null, null, null, null, null), PageRequest.of(0, 20));

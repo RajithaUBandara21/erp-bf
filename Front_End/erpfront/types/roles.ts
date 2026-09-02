@@ -45,7 +45,7 @@ export interface MePermissions {
 	permissions: string[];
 }
 
-/** One entry in the tenant user directory - `GET /api/users` / `UserSummaryResponse`. Backs the member picker. */
+/** One entry in the organization user directory - `GET /api/users` / `UserSummaryResponse`. Backs the member picker. */
 export interface UserSummary {
 	id: string;
 	fullName: string;

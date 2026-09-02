@@ -165,4 +165,29 @@ class TenantAdminAccessServiceTest {
 		assertThat(tenantAdminAccessService.isTenantAdmin(plainMemberId, fixture.tenantId())).isFalse();
 	}
 
+	@Test
+	void administeredTenantIdsReturnsOnlyTenantsWhereTheUserHoldsTheTenantAdminRole() {
+		Fixture adminHere = registerTenantAdmin("ta-admin-set@acme.test");
+		Fixture otherTenant = registerTenantAdmin("ta-other-set@acme.test");
+
+		// Same user, plain ACTIVE membership in the other tenant - not an admin there.
+		Membership plainElsewhere = new Membership();
+		plainElsewhere.setUserId(adminHere.userId());
+		plainElsewhere.setTenantId(otherTenant.tenantId());
+		plainElsewhere.setOrganizationId(otherTenant.homeOrgId());
+		plainElsewhere.setStatus(MembershipStatus.ACTIVE);
+		membershipRepository.save(plainElsewhere);
+
+		assertThat(tenantAdminAccessService.administeredTenantIds(adminHere.userId()))
+				.containsExactly(adminHere.tenantId());
+	}
+
+	@Test
+	void administeredTenantIdsIsEmptyForAPlainMember() {
+		Fixture fixture = registerTenantAdmin("ta-empty-set@acme.test");
+		UUID plainMemberId = addPlainMember(fixture.tenantId(), fixture.homeOrgId(), "plain@ta-empty-set.test");
+
+		assertThat(tenantAdminAccessService.administeredTenantIds(plainMemberId)).isEmpty();
+	}
+
 }

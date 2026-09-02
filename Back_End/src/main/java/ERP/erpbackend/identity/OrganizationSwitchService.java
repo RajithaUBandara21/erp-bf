@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +67,8 @@ public class OrganizationSwitchService {
 		}
 
 		// Tenant-admin reach: every other active Organization under a Tenant the caller administers.
-		Set<UUID> administeredTenantIds = tenantIds.stream()
-				.filter(tenantId -> tenantAdminAccessService.isTenantAdmin(caller.userId(), tenantId))
-				.collect(Collectors.toSet());
+		Set<UUID> administeredTenantIds = new HashSet<>(tenantAdminAccessService.administeredTenantIds(caller.userId()));
+		administeredTenantIds.retainAll(tenantIds);
 		for (OrganizationSummary org : activeOrgs) {
 			if (administeredTenantIds.contains(org.tenantId()) && !heldOrgIds.contains(org.id())) {
 				rows.add(toRow(org, tenantNames, caller, true));

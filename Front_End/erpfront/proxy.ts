@@ -20,7 +20,7 @@ export const config = {
 };
 
 const handleI18nRouting = createMiddleware(routing);
-const PUBLIC_PATHS = ["/sign-in", "/sign-up"];
+const PUBLIC_PATHS = ["/sign-in", "/sign-up", "/verify-email"];
 
 /**
  * Merges next-intl's locale routing with the auth guard - only one proxy function is allowed per
