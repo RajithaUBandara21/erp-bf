@@ -105,7 +105,6 @@ class AuthenticationServiceTest {
 		Session session = sessionRepository.findById(authenticatedUser.sessionId()).orElseThrow();
 		assertThat(session.getClientType()).isEqualTo(ClientType.MOBILE);
 		assertThat(session.getUserId()).isEqualTo(response.userId());
-		assertThat(session.getTenantId()).isEqualTo(response.tenantId());
 	}
 
 	@Test
@@ -334,6 +333,20 @@ class AuthenticationServiceTest {
 		User user = userRepository.findById(loginResponse.userId()).orElseThrow();
 		user.setActive(false);
 		userRepository.save(user);
+
+		assertUnauthorizedRefresh(new RefreshRequest(loginResponse.refreshToken()));
+	}
+
+	@Test
+	void refreshingFailsOnceTheSessionsMembershipIsNoLongerActive() {
+		String email = "refresh-membership-revoked@acme.test";
+		register(email);
+		TokenResponse loginResponse = loginSingle(email, ClientType.WEB);
+		UUID sessionId = jwtService.parseAccessToken(loginResponse.accessToken()).orElseThrow().sessionId();
+		Membership membership = membershipRepository
+				.findById(sessionRepository.findById(sessionId).orElseThrow().getMembershipId()).orElseThrow();
+		membership.setStatus(MembershipStatus.PENDING);
+		membershipRepository.save(membership);
 
 		assertUnauthorizedRefresh(new RefreshRequest(loginResponse.refreshToken()));
 	}

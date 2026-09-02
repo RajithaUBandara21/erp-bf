@@ -122,7 +122,6 @@ public class OrganizationSwitchService {
 				.orElse(null);
 
 		session.setMembershipId(target.getId());
-		session.setTenantId(target.getTenantId());
 		session.setLastUsedAt(Instant.now());
 		sessionRepository.save(session);
 

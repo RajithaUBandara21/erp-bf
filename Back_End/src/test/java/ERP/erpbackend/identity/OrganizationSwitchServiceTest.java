@@ -191,7 +191,6 @@ class OrganizationSwitchServiceTest {
 
 		Session session = sessionRepository.findById(caller.sessionId()).orElseThrow();
 		assertThat(session.getMembershipId()).isEqualTo(secondMembershipId);
-		assertThat(session.getTenantId()).isEqualTo(second.tenantId());
 
 		assertThat(switchAuditRows(caller.sessionId())).singleElement().satisfies(log -> {
 			assertThat(log.getEntityType()).isEqualTo("Session");

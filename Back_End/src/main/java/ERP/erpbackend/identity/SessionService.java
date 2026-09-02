@@ -25,8 +25,7 @@ public class SessionService {
 
 	public List<SessionResponse> listSessions(AuthenticatedUser authenticatedUser) {
 		return sessionRepository
-				.findByTenantIdAndUserIdAndRevokedAtIsNullAndExpiresAtAfter(
-						authenticatedUser.tenantId(), authenticatedUser.userId(), Instant.now())
+				.findByUserIdAndRevokedAtIsNullAndExpiresAtAfter(authenticatedUser.userId(), Instant.now())
 				.stream()
 				.map(session -> toResponse(session, authenticatedUser.sessionId()))
 				.toList();
@@ -34,7 +33,7 @@ public class SessionService {
 
 	public void revokeSession(AuthenticatedUser authenticatedUser, UUID sessionId) {
 		Session session = sessionRepository
-				.findByIdAndTenantIdAndUserId(sessionId, authenticatedUser.tenantId(), authenticatedUser.userId())
+				.findByIdAndUserId(sessionId, authenticatedUser.userId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND));
 		session.setRevokedAt(Instant.now());
 		sessionRepository.save(session);
@@ -44,9 +43,9 @@ public class SessionService {
 	@Transactional
 	public void revokeOtherSessions(AuthenticatedUser authenticatedUser) {
 		List<UUID> revokedIds = sessionRepository.findActiveIdsExceptCurrent(
-				authenticatedUser.tenantId(), authenticatedUser.userId(), authenticatedUser.sessionId());
+				authenticatedUser.userId(), authenticatedUser.sessionId());
 		sessionRepository.revokeAllExceptCurrent(
-				authenticatedUser.tenantId(), authenticatedUser.userId(), authenticatedUser.sessionId(), Instant.now());
+				authenticatedUser.userId(), authenticatedUser.sessionId(), Instant.now());
 
 		// The Redis fast-path writes are best-effort enforcement (Postgres is the record). Run them after
 		// the DB commits so no blocking Redis round-trip sits inside the transaction boundary (F-18); if

@@ -20,7 +20,6 @@ public class SessionTokenIssuer {
 	public Session createSession(User user, Membership membership, ClientType clientType) {
 		Instant now = Instant.now();
 		Session session = new Session();
-		session.setTenantId(membership.getTenantId());
 		session.setUserId(user.getId());
 		session.setMembershipId(membership.getId());
 		session.setClientType(clientType);

@@ -9,6 +9,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import ERP.erpbackend.TestcontainersConfiguration;
+import ERP.erpbackend.organization.OrganizationService;
+import ERP.erpbackend.organization.TenantOrganization;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,15 @@ class SessionServiceTest {
 
 	@Autowired
 	private SessionService sessionService;
+
+	@Autowired
+	private OrganizationService organizationService;
+
+	@Autowired
+	private MembershipRepository membershipRepository;
+
+	@Autowired
+	private SessionRepository sessionRepository;
 
 	@MockitoSpyBean
 	private RevokedSessionRegistry revokedSessionRegistry;
@@ -165,6 +177,64 @@ class SessionServiceTest {
 		assertThat(sessionService.listSessions(current))
 				.extracting(SessionResponse::id)
 				.containsExactly(current.sessionId());
+	}
+
+	@Test
+	void listAndIndividualRevokeReachSessionsScopedToAnotherTenant() {
+		CrossTenantUser user = userWithSessionsInTwoTenants("cross-tenant-list@acme.test");
+
+		assertThat(sessionService.listSessions(user.deviceInTenantA()))
+				.extracting(SessionResponse::id)
+				.containsExactlyInAnyOrder(user.deviceInTenantA().sessionId(), user.sessionInTenantB());
+
+		sessionService.revokeSession(user.deviceInTenantA(), user.sessionInTenantB());
+
+		assertThat(sessionService.listSessions(user.deviceInTenantA()))
+				.extracting(SessionResponse::id)
+				.containsExactly(user.deviceInTenantA().sessionId());
+	}
+
+	@Test
+	void revokeOtherSessionsReachesSessionsScopedToAnotherTenant() {
+		CrossTenantUser user = userWithSessionsInTwoTenants("cross-tenant-revoke-others@acme.test");
+
+		sessionService.revokeOtherSessions(user.deviceInTenantA());
+
+		assertThat(sessionService.listSessions(user.deviceInTenantA()))
+				.extracting(SessionResponse::id)
+				.containsExactly(user.deviceInTenantA().sessionId());
+		verify(revokedSessionRegistry).revoke(user.sessionInTenantB());
+	}
+
+	private record CrossTenantUser(AuthenticatedUser deviceInTenantA, UUID sessionInTenantB) {
+	}
+
+	/**
+	 * One account with an ACTIVE Membership and a live device session in each of two Tenants. No product
+	 * flow grants cross-tenant memberships yet, so the second Tenant's Membership and Session are built
+	 * straight through the repositories.
+	 */
+	private CrossTenantUser userWithSessionsInTwoTenants(String email) {
+		AuthenticatedUser deviceInTenantA = registerOrg(email);
+
+		TenantOrganization tenantB = organizationService.createTenantAndOrganization("Zenith " + email);
+		Membership membershipInTenantB = new Membership();
+		membershipInTenantB.setUserId(deviceInTenantA.userId());
+		membershipInTenantB.setTenantId(tenantB.tenantId());
+		membershipInTenantB.setOrganizationId(tenantB.organizationId());
+		membershipInTenantB.setStatus(MembershipStatus.ACTIVE);
+		membershipInTenantB = membershipRepository.save(membershipInTenantB);
+
+		Instant now = Instant.now();
+		Session sessionInTenantB = new Session();
+		sessionInTenantB.setUserId(deviceInTenantA.userId());
+		sessionInTenantB.setMembershipId(membershipInTenantB.getId());
+		sessionInTenantB.setClientType(ClientType.MOBILE);
+		sessionInTenantB.setLastUsedAt(now);
+		sessionInTenantB.setExpiresAt(now.plusSeconds(3600));
+		sessionInTenantB = sessionRepository.save(sessionInTenantB);
+
+		return new CrossTenantUser(deviceInTenantA, sessionInTenantB.getId());
 	}
 
 }

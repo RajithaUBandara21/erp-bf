@@ -91,7 +91,11 @@ public class AuthenticationService {
 				.filter(User::isActive)
 				.orElseThrow(AuthenticationService::invalidCredentials);
 
+		// Re-check the Membership is still ACTIVE, mirroring selectOrganization's parallel re-check: a
+		// session must stop minting access tokens the moment its Organization access is revoked, not
+		// only once the Membership row is deleted.
 		Membership membership = membershipRepository.findById(session.getMembershipId())
+				.filter(candidate -> candidate.getStatus() == MembershipStatus.ACTIVE)
 				.orElseThrow(AuthenticationService::invalidCredentials);
 
 		Instant now = Instant.now();

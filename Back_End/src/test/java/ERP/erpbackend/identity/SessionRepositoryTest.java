@@ -79,7 +79,6 @@ class SessionRepositoryTest {
 		Instant expiresAt = lastUsedAt.plusSeconds(3600);
 
 		Session session = new Session();
-		session.setTenantId(tenant.getId());
 		session.setUserId(user.getId());
 		session.setMembershipId(membership.getId());
 		session.setClientType(ClientType.WEB);
@@ -89,7 +88,6 @@ class SessionRepositoryTest {
 		Session saved = sessionRepository.saveAndFlush(session);
 
 		Session found = sessionRepository.findById(saved.getId()).orElseThrow();
-		assertThat(found.getTenantId()).isEqualTo(tenant.getId());
 		assertThat(found.getUserId()).isEqualTo(user.getId());
 		assertThat(found.getMembershipId()).isEqualTo(membership.getId());
 		assertThat(found.getClientType()).isEqualTo(ClientType.WEB);
@@ -110,7 +108,6 @@ class SessionRepositoryTest {
 		Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
 		Session session = new Session();
-		session.setTenantId(tenant.getId());
 		session.setUserId(user.getId());
 		session.setMembershipId(membership.getId());
 		session.setClientType(ClientType.MOBILE);
