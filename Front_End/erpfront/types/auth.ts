@@ -27,6 +27,11 @@ export type LoginResponse =
 	| { outcome: "AUTHENTICATED"; session: TokenResponse; selectionToken: null; organizations: null }
 	| { outcome: "SELECT_ORGANIZATION"; session: null; selectionToken: string; organizations: MembershipOption[] };
 
+/** `202` body of `POST /api/auth/join` - a fixed sentence, identical for every email-related outcome. */
+export interface SelfJoinResponse {
+	message: string;
+}
+
 /** `200` body of `POST /api/auth/verify-email` - a human-readable status message plus the Organization name. */
 export interface VerifyEmailResponse {
 	message: string;
