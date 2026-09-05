@@ -60,6 +60,8 @@
 			"orDivider": "or",
 			"noAccount": "Don''t have an account?",
 			"createWorkspace": "Create your workspace",
+			"hasInvite": "Have an invite code?",
+			"joinOrganization": "Join an organization",
 			"emailRequired": "Email is required.",
 			"passwordRequired": "Password is required.",
 			"selectPrompt": "Your account belongs to more than one organization. Choose the one to sign in to.",

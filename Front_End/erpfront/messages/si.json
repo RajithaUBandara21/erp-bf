@@ -60,6 +60,8 @@
 			"orDivider": "හෝ",
 			"noAccount": "ගිණුමක් නැද්ද?",
 			"createWorkspace": "ඔබේ වැඩබිම සාදන්න",
+			"hasInvite": "ආරාධන කේතයක් තිබේද?",
+			"joinOrganization": "සංවිධානයකට එක්වන්න",
 			"emailRequired": "විද්‍යුත් තැපෑල අවශ්‍යයි.",
 			"passwordRequired": "මුරපදය අවශ්‍යයි.",
 			"selectPrompt": "ඔබගේ ගිණුම සංවිධාන කිහිපයකට අයත් වේ. පුරන්නට සංවිධානය තෝරන්න.",

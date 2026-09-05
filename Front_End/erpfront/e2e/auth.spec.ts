@@ -74,3 +74,17 @@ test("join form flags a weak password and a mismatched confirmation", async ({ p
   ).toBeVisible();
   await expect(page.getByText("Passwords do not match.")).toBeVisible();
 });
+
+test("sign-in page links out to both create-workspace and join-organization, each on its own route", async ({ page }) => {
+  await page.goto("/sign-in");
+
+  await expect(page.getByRole("link", { name: "Create your workspace" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Join an organization" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Join an organization" }).click();
+  await expect(page).toHaveURL(/\/join$/);
+
+  await page.goto("/sign-in");
+  await page.getByRole("link", { name: "Create your workspace" }).click();
+  await expect(page).toHaveURL(/\/sign-up$/);
+});
