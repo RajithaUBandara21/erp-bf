@@ -131,6 +131,7 @@
 			"title": "Verify your email",
 			"description": "Confirming your request to join an organization",
 			"missingToken": "This verification link is invalid or has expired. Ask the organization for a new invite.",
+			"success": "Your email is verified. Your request to join <org>{organizationName}</org> is now awaiting an organization admin''s approval. You won''t be able to sign in until it is approved.",
 			"backToSignIn": "Back to sign in"
 		}
 	},
