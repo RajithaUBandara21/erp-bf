@@ -41,3 +41,50 @@ test("sign-up form flags a weak password, a mismatched confirmation, and uncheck
   await expect(page.getByText("Passwords do not match.")).toBeVisible();
   await expect(page.getByText("You must agree to the Terms of Service and Privacy Policy.")).toBeVisible();
 });
+
+test("join form shows a field error for each empty required field", async ({ page }) => {
+  await page.goto("/join");
+  await page.getByRole("button", { name: "Request access" }).click();
+
+  await expect(page.getByText("Full name is required.")).toBeVisible();
+  await expect(page.getByText("Email is required.")).toBeVisible();
+  await expect(page.getByText("Invite code is required.")).toBeVisible();
+  await expect(
+    page.locator(".text-danger", {
+      hasText: "Password must be at least 8 characters, with one number and one uppercase letter.",
+    }),
+  ).toBeVisible();
+});
+
+test("join form flags a weak password and a mismatched confirmation", async ({ page }) => {
+  await page.goto("/join");
+
+  await page.getByLabel("Full name").fill("Nimal Perera");
+  await page.getByLabel("Email").fill("nimal@northstar-retail.com");
+  await page.getByLabel("Password", { exact: true }).fill("weak");
+  await page.getByLabel("Confirm password").fill("different-value");
+  await page.getByLabel("Invite code").fill("NORTHSTAR-4F2A");
+
+  await page.getByRole("button", { name: "Request access" }).click();
+
+  await expect(
+    page.locator(".text-danger", {
+      hasText: "Password must be at least 8 characters, with one number and one uppercase letter.",
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Passwords do not match.")).toBeVisible();
+});
+
+test("sign-in page links out to both create-workspace and join-organization, each on its own route", async ({ page }) => {
+  await page.goto("/sign-in");
+
+  await expect(page.getByRole("link", { name: "Create your workspace" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Join an organization" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Join an organization" }).click();
+  await expect(page).toHaveURL(/\/join$/);
+
+  await page.goto("/sign-in");
+  await page.getByRole("link", { name: "Create your workspace" }).click();
+  await expect(page).toHaveURL(/\/sign-up$/);
+});

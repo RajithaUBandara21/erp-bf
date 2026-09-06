@@ -5,7 +5,7 @@ import { redirect } from "@/i18n/navigation";
 import { API_BASE_URL, postJson } from "@/lib/api";
 import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
 import { fetchWithTimeout } from "@/lib/http";
-import type { LoginResponse, MembershipOption, TokenResponse } from "@/types/auth";
+import type { LoginResponse, MembershipOption, SelfJoinResponse, TokenResponse } from "@/types/auth";
 
 // Mirrors the backend's @Pattern on RegisterRequest.password - UX only, the backend stays authoritative.
 const PASSWORD_PATTERN = /^(?=.*[0-9])(?=.*[A-Z]).{8,}$/;
@@ -66,6 +66,60 @@ export async function signUp(locale: string, _prevState: SignUpFormState, formDa
 	// Onboarding on a fresh org, no shared-machine signal - persist the session like today.
 	await setAuthCookies(result.data, true);
 	redirect({ href: "/", locale });
+}
+
+export interface JoinFormState {
+	error?: string;
+	fieldErrors?: Record<string, string>;
+	// React resets the <form> after a server action runs, so uncontrolled fields need this to survive a failed submit.
+	values?: {
+		fullName: string;
+		email: string;
+		inviteCode: string;
+	};
+	// Set once the backend has accepted the request: the form swaps to the "check your email" panel.
+	submitted?: boolean;
+}
+
+// See signUp above for why `locale` is a bound first argument. Unlike login/register, the join
+// endpoint takes no clientType - it issues no session.
+export async function join(locale: string, _prevState: JoinFormState, formData: FormData): Promise<JoinFormState> {
+	const fullName = String(formData.get("fullName") ?? "").trim();
+	const email = String(formData.get("email") ?? "").trim();
+	const password = String(formData.get("password") ?? "");
+	const confirmPassword = String(formData.get("confirmPassword") ?? "");
+	const inviteCode = String(formData.get("inviteCode") ?? "").trim();
+	const values = { fullName, email, inviteCode };
+	const t = await getTranslations({ locale, namespace: "auth.join" });
+
+	const fieldErrors: Record<string, string> = {};
+	if (!fullName) fieldErrors.fullName = t("fullNameRequired");
+	if (!email) fieldErrors.email = t("emailRequired");
+	if (!PASSWORD_PATTERN.test(password)) {
+		fieldErrors.password = t("passwordInvalid");
+	}
+	if (password !== confirmPassword) {
+		fieldErrors.confirmPassword = t("passwordMismatch");
+	}
+	if (!inviteCode) fieldErrors.inviteCode = t("inviteCodeRequired");
+	if (Object.keys(fieldErrors).length > 0) {
+		return { fieldErrors, values };
+	}
+
+	const result = await postJson<SelfJoinResponse>("/api/auth/join", { email, password, fullName, inviteCode });
+
+	if (!result.success) {
+		// A 400 maps its `errors` onto the fields; the join endpoint's only other distinct failure is the
+		// 404 for a bad/inactive invite code, which carries an empty `errors` map and reads fine as a
+		// top-of-form banner (do not match on its text).
+		if (result.fieldErrors && Object.keys(result.fieldErrors).length > 0) {
+			return { fieldErrors: result.fieldErrors, values };
+		}
+		return { error: result.error, values };
+	}
+
+	// No session is issued - the joiner stays signed out until an Org Admin approves them.
+	return { submitted: true, values };
 }
 
 export interface SignInFormState {

@@ -60,10 +60,18 @@ export default async function SignInPage({
 			description={t("signIn.description")}
 			footer={
 				<>
-					{t("signIn.noAccount")}{" "}
-					<Link href="/sign-up" className="font-semibold text-accent hover:underline">
-						{t("signIn.createWorkspace")}
-					</Link>
+					<span className="block">
+						{t("signIn.noAccount")}{" "}
+						<Link href="/sign-up" className="font-semibold text-accent hover:underline">
+							{t("signIn.createWorkspace")}
+						</Link>
+					</span>
+					<span className="mt-1 block">
+						{t("signIn.hasInvite")}{" "}
+						<Link href="/join" className="font-semibold text-accent hover:underline">
+							{t("signIn.joinOrganization")}
+						</Link>
+					</span>
 				</>
 			}
 		>

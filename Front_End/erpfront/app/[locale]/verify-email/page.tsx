@@ -4,8 +4,6 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { postJson } from "@/lib/api";
 import type { VerifyEmailResponse } from "@/types/auth";
 
-// Interim landing page so the emailed verification link resolves end to end now. 5d replaces this
-// with the full-styled self-join flow (join-with-invite-code form, sign-in entry links, org switcher).
 export default async function VerifyEmailPage({
 	searchParams,
 }: {
@@ -14,13 +12,12 @@ export default async function VerifyEmailPage({
 	const { token } = await searchParams;
 	const t = await getTranslations("auth.verifyEmail");
 
-	let message: string;
-	if (!token || token.trim() === "") {
-		message = t("missingToken");
-	} else {
-		const result = await postJson<VerifyEmailResponse>("/api/auth/verify-email", { token });
-		message = result.success ? result.data.message : result.error;
-	}
+	// A missing token never reaches the backend; every other outcome (200 success, or the 400/409
+	// whose `error` is already a human sentence) renders whatever `postJson` returns.
+	const result =
+		token && token.trim() !== ""
+			? await postJson<VerifyEmailResponse>("/api/auth/verify-email", { token })
+			: null;
 
 	return (
 		<AuthShell
@@ -32,7 +29,16 @@ export default async function VerifyEmailPage({
 				</Link>
 			}
 		>
-			<p className="text-[13px] text-text">{message}</p>
+			{result?.success ? (
+				<p className="text-[13px] text-text">
+					{t.rich("success", {
+						organizationName: result.data.organizationName,
+						org: (chunks) => <span className="font-semibold text-text">{chunks}</span>,
+					})}
+				</p>
+			) : (
+				<p className="text-[13px] text-text">{result ? result.error : t("missingToken")}</p>
+			)}
 		</AuthShell>
 	);
 }
