@@ -1,6 +1,11 @@
 {
 	"shell": {
-		"brand": "Universal ERP"
+		"brand": "Universal ERP",
+		"orgSwitcher": {
+			"label": "සංවිධානය",
+			"viaTenantAdmin": "{name} (පරිපාලක ප්‍රවේශය)",
+			"currentUnavailable": "වත්මන් සංවිධානය ලබා ගත නොහැක"
+		}
 	},
 	"moduleLauncher": {
 		"heading": "මොඩියුල",

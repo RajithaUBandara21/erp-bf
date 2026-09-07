@@ -27,6 +27,20 @@ export type LoginResponse =
 	| { outcome: "AUTHENTICATED"; session: TokenResponse; selectionToken: null; organizations: null }
 	| { outcome: "SELECT_ORGANIZATION"; session: null; selectionToken: string; organizations: MembershipOption[] };
 
+/**
+ * One Organization the signed-in caller can switch into - `GET /api/auth/memberships` /
+ * `ReachableOrganizationResponse`. `viaTenantAdmin` rows have no membership here yet; switching to
+ * one auto-provisions an Owner membership server-side.
+ */
+export interface ReachableOrganization {
+	organizationId: string;
+	organizationName: string;
+	tenantId: string;
+	tenantName: string;
+	current: boolean;
+	viaTenantAdmin: boolean;
+}
+
 /** `202` body of `POST /api/auth/join` - a fixed sentence, identical for every email-related outcome. */
 export interface SelfJoinResponse {
 	message: string;

@@ -2,8 +2,8 @@
 
 import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { API_BASE_URL, postJson } from "@/lib/api";
-import { clearAuthCookies, getRefreshToken, setAuthCookies } from "@/lib/auth-cookies";
+import { API_BASE_URL, authedFetch, postJson } from "@/lib/api";
+import { clearAuthCookies, getRefreshToken, hasRememberMe, setAuthCookies } from "@/lib/auth-cookies";
 import { fetchWithTimeout } from "@/lib/http";
 import type { LoginResponse, MembershipOption, SelfJoinResponse, TokenResponse } from "@/types/auth";
 
@@ -208,6 +208,44 @@ export async function selectOrganization(
 	}
 
 	await setAuthCookies(result.data, remember);
+	redirect({ href: "/", locale });
+}
+
+export interface SwitchOrganizationState {
+	error?: string;
+}
+
+// See signUp above for why `locale` is a bound first argument (components/shell/OrganizationSwitcher.tsx
+// passes it via useLocale()). Backs the top-nav Organization Switcher; the backend endpoint and its
+// audit/auto-provision effects shipped in 5b.3.
+export async function switchOrganization(
+	locale: string,
+	_prevState: SwitchOrganizationState,
+	formData: FormData,
+): Promise<SwitchOrganizationState> {
+	const organizationId = String(formData.get("organizationId") ?? "");
+	if (!organizationId) {
+		return {};
+	}
+
+	// authedFetch sets no Content-Type of its own; this POST has a body, so pass it explicitly.
+	const result = await authedFetch<TokenResponse>("/api/auth/switch-organization", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ organizationId }),
+	});
+
+	if (!result.success) {
+		if ("unauthorized" in result) {
+			redirect({ href: "/sign-in", locale });
+		}
+		// Backend sentence (400 already-current / 403 unreachable / 404 no such org), shown untranslated.
+		return { error: result.error };
+	}
+
+	// Same session, re-scoped: rewrite the cookies exactly as login does, preserving the remember-me choice.
+	await setAuthCookies(result.data, await hasRememberMe());
+	// Reload at home so every server component re-renders under the new Organization scope. Never returns.
 	redirect({ href: "/", locale });
 }
 

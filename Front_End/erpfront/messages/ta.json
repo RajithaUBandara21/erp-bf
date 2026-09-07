@@ -1,6 +1,11 @@
 {
 	"shell": {
-		"brand": "Universal ERP"
+		"brand": "Universal ERP",
+		"orgSwitcher": {
+			"label": "நிறுவனம்",
+			"viaTenantAdmin": "{name} (நிர்வாக அணுகல்)",
+			"currentUnavailable": "தற்போதைய நிறுவனம் கிடைக்கவில்லை"
+		}
 	},
 	"moduleLauncher": {
 		"heading": "தொகுதிகள்",

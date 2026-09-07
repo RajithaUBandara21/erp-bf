@@ -1,6 +1,11 @@
 {
 	"shell": {
-		"brand": "Universal ERP"
+		"brand": "Universal ERP",
+		"orgSwitcher": {
+			"label": "Organization",
+			"viaTenantAdmin": "{name} (admin access)",
+			"currentUnavailable": "Current organization unavailable"
+		}
 	},
 	"moduleLauncher": {
 		"heading": "Modules",

@@ -66,6 +66,15 @@ export async function getRefreshToken(): Promise<string | undefined> {
 }
 
 /**
+ * Whether the original login opted into "remember me". A re-issue of the auth cookies (the org
+ * switch) must preserve that choice, and the browser never reveals how the original cookie was
+ * scoped - the same signal `proxy.ts` reads on a token refresh.
+ */
+export async function hasRememberMe(): Promise<boolean> {
+	return (await cookies()).has(REMEMBER_TOKEN_COOKIE);
+}
+
+/**
  * Any auth cookie is present - a lone refresh cookie counts, since the proxy can trade it for a
  * fresh access token. Use this to guard `/settings/*` so an in-flight refresh isn't bounced to sign-in.
  */
