@@ -152,6 +152,10 @@
 			"title": "Roles & permissions",
 			"description": "Roles bundle permissions and are assigned to users across the workspace."
 		},
+		"organizationsTile": {
+			"title": "Organizations",
+			"description": "The organizations under your tenant, and creating new ones."
+		},
 		"auditLogTile": {
 			"title": "Audit logs",
 			"description": "Every recorded action across identity, security, and business data."
@@ -167,6 +171,37 @@
 			"revoking": "Revoking...",
 			"revokeAllOthers": "Revoke all other sessions",
 			"missingSession": "Missing session."
+		},
+		"organizations": {
+			"title": "Organizations",
+			"intro": "Every organization under your tenant. Each keeps its own isolated data.",
+			"forbidden": "Only a Tenant Admin can manage this tenant''s organizations.",
+			"loadError": "We couldn''t load your organizations right now. Please refresh to try again.",
+			"count": "{count} of {max} organizations",
+			"planLabel": "Plan: {plan}",
+			"noPlan": "No plan assigned",
+			"list": {
+				"empty": "No organizations yet.",
+				"nameColumn": "Organization",
+				"codeColumn": "Code",
+				"statusColumn": "Status",
+				"createdColumn": "Created"
+			},
+			"status": {
+				"active": "Active",
+				"inactive": "Inactive"
+			},
+			"newOrganization": "New organization",
+			"atLimitNote": "You''ve reached your plan''s organization limit. Ask your administrator to raise it.",
+			"form": {
+				"nameLabel": "Organization name",
+				"namePlaceholder": "e.g. Downtown Warehouse",
+				"nameRequired": "Organization name is required.",
+				"create": "Create organization",
+				"creating": "Creating...",
+				"cancel": "Cancel"
+			},
+			"created": "Organization created."
 		},
 		"clientType": {
 			"web": "Web browser",
