@@ -55,6 +55,16 @@ export default async function SettingsPage({
 					<p className="mt-1 text-xs text-muted">{t("rolesTile.description")}</p>
 				</Link>
 
+				{can(perms, "organization.view") && (
+					<Link
+						href="/settings/organizations"
+						className="block rounded-lg border border-border bg-surface p-6 shadow-sm hover:border-accent"
+					>
+						<h2 className="text-sm font-semibold">{t("organizationsTile.title")}</h2>
+						<p className="mt-1 text-xs text-muted">{t("organizationsTile.description")}</p>
+					</Link>
+				)}
+
 				{can(perms, "audit.view") && (
 					<Link
 						href="/settings/audit-log"
