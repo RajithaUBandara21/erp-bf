@@ -4,6 +4,7 @@ import { authedFetch } from "@/lib/api";
 import { fetchMyPermissions } from "@/lib/permissions";
 import type { OrganizationListView } from "@/types/organizations";
 import { OrganizationList } from "@/components/settings/OrganizationList";
+import { CreateOrganizationForm } from "@/components/settings/CreateOrganizationForm";
 
 export default async function OrganizationsPage() {
 	const [result, , t] = await Promise.all([
@@ -33,6 +34,9 @@ export default async function OrganizationsPage() {
 						{result.data.plan ? t("planLabel", { plan: result.data.plan }) : t("noPlan")}
 					</p>
 					<OrganizationList organizations={result.data.organizations} />
+					<div className="mt-4">
+						<CreateOrganizationForm atLimit={result.data.organizations.length >= result.data.maxOrganizations} />
+					</div>
 				</>
 			) : (
 				<div className="rounded-lg border border-border bg-surface p-6 text-[13px] text-muted shadow-sm">
