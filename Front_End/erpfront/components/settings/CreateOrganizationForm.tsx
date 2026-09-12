@@ -12,14 +12,27 @@ export function CreateOrganizationForm({ atLimit }: { atLimit: boolean }) {
 	const [open, setOpen] = useState(false);
 	const [confirmed, setConfirmed] = useState(false);
 
-	if (atLimit) {
-		return <p className="text-[13px] text-muted">{t("atLimitNote")}</p>;
+	if (open) {
+		return (
+			<CreatePanel
+				onCancel={() => setOpen(false)}
+				onCreated={() => {
+					setOpen(false);
+					setConfirmed(true);
+				}}
+			/>
+		);
 	}
 
-	if (!open) {
-		return (
-			<div className="flex items-center justify-end gap-2">
-				{confirmed && <span className="text-[13px] font-semibold text-success">{t("created")}</span>}
+	// A create that lands exactly on the limit flips `atLimit` true on this same render (via
+	// revalidatePath), but the confirmation must still show - `confirmed` is checked first, and the
+	// at-limit note only replaces the button, never the confirmation already in view.
+	return (
+		<div className="flex items-center justify-end gap-2">
+			{confirmed && <span className="text-[13px] font-semibold text-success">{t("created")}</span>}
+			{atLimit ? (
+				!confirmed && <p className="text-[13px] text-muted">{t("atLimitNote")}</p>
+			) : (
 				<button
 					type="button"
 					onClick={() => {
@@ -30,18 +43,8 @@ export function CreateOrganizationForm({ atLimit }: { atLimit: boolean }) {
 				>
 					{t("newOrganization")}
 				</button>
-			</div>
-		);
-	}
-
-	return (
-		<CreatePanel
-			onCancel={() => setOpen(false)}
-			onCreated={() => {
-				setOpen(false);
-				setConfirmed(true);
-			}}
-		/>
+			)}
+		</div>
 	);
 }
 
