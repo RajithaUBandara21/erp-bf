@@ -75,6 +75,16 @@ export default async function SettingsPage({
 					</Link>
 				)}
 
+				{(can(perms, "organization.edit") || can(perms, "user.approve")) && (
+					<Link
+						href="/settings/join-requests"
+						className="block rounded-lg border border-border bg-surface p-6 shadow-sm hover:border-accent"
+					>
+						<h2 className="text-sm font-semibold">{t("joinRequestsTile.title")}</h2>
+						<p className="mt-1 text-xs text-muted">{t("joinRequestsTile.description")}</p>
+					</Link>
+				)}
+
 				<GoogleAccountCard status={googleStatus} />
 			</div>
 		</div>

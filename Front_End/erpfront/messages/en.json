@@ -160,6 +160,10 @@
 			"title": "Audit logs",
 			"description": "Every recorded action across identity, security, and business data."
 		},
+		"joinRequestsTile": {
+			"title": "Join requests",
+			"description": "The self-join invite code, and approving or rejecting pending requests."
+		},
 		"sessions": {
 			"title": "Active sessions",
 			"intro": "Devices currently signed in to your account.",
@@ -202,6 +206,39 @@
 				"cancel": "Cancel"
 			},
 			"created": "Organization created."
+		},
+		"joinRequests": {
+			"title": "Join requests",
+			"intro": "Manage the invite code employees use to self-join this organization, and approve or reject their pending requests.",
+			"forbidden": "You don''t have access to manage this organization''s invite code. Ask an administrator if you need it.",
+			"loadError": "We couldn''t load this right now. Please refresh to try again.",
+			"inviteCode": {
+				"heading": "Invite code",
+				"description": "Share this code with employees so they can request to join this organization.",
+				"copy": "Copy",
+				"copied": "Copied",
+				"copyError": "Couldn''t copy the code. Please copy it manually.",
+				"rotate": "Rotate code",
+				"rotateConfirmMessage": "Rotating invalidates the old code for anyone still holding it.",
+				"rotateConfirmButton": "Rotate code",
+				"rotating": "Rotating...",
+				"cancel": "Cancel"
+			},
+			"queue": {
+				"heading": "Pending requests",
+				"empty": "No pending join requests.",
+				"forbidden": "You don''t have access to approve join requests. Ask an administrator if you need it.",
+				"nameColumn": "Name",
+				"emailColumn": "Email",
+				"requestedColumn": "Requested",
+				"actionsColumn": "Actions",
+				"reject": "Reject",
+				"rejecting": "Rejecting...",
+				"roleAria": "Choose a role to assign on approval",
+				"rolePlaceholder": "Choose a role...",
+				"approve": "Approve",
+				"approving": "Approving..."
+			}
 		},
 		"clientType": {
 			"web": "Web browser",
