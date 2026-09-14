@@ -37,6 +37,8 @@ class UserRepositoryTest {
 		assertThat(found.getPasswordHash()).isEqualTo("hashed-password");
 		assertThat(found.getFullName()).isEqualTo("Ada Owner");
 		assertThat(found.isActive()).isTrue();
+		assertThat(found.isPlatformSuperAdmin()).isFalse();
+		assertThat(found.isMustChangePassword()).isFalse();
 		assertThat(found.getCreatedAt()).isNotNull();
 		assertThat(found.getUpdatedAt()).isNotNull();
 	}

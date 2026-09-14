@@ -28,4 +28,10 @@ public class User extends AuditableEntity {
 	@Column(nullable = false)
 	private boolean active = true;
 
+	@Column(name = "platform_super_admin", nullable = false)
+	private boolean platformSuperAdmin = false;
+
+	@Column(name = "must_change_password", nullable = false)
+	private boolean mustChangePassword = false;
+
 }

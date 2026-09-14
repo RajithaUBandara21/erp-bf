@@ -61,6 +61,21 @@ class AuditServiceTest {
 	}
 
 	@Test
+	void logsAnEventWithNoTenantForAPlatformSuperAdminAction() {
+		AuditEvent event = new AuditEvent(null, null, null, "User", UUID.randomUUID(),
+				"user.platform_super_admin_bootstrapped", null, null);
+		when(auditLogRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+		auditService.log(event);
+
+		ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+		verify(auditLogRepository).save(captor.capture());
+		AuditLog saved = captor.getValue();
+		assertThat(saved.getTenantId()).isNull();
+		assertThat(saved.getAction()).isEqualTo("user.platform_super_admin_bootstrapped");
+	}
+
+	@Test
 	void propagatesSerializationFailuresInsteadOfSwallowingThem() {
 		AuditEvent event = new AuditEvent(UUID.randomUUID(), null, null, "Role", null, "role.updated",
 				null, new Unserializable());

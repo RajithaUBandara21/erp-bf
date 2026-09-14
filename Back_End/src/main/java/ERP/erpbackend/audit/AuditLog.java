@@ -23,7 +23,7 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "audit_logs")
 public class AuditLog extends AuditableEntity {
 
-	@Column(name = "tenant_id", nullable = false)
+	@Column(name = "tenant_id")
 	private UUID tenantId;
 
 	@Column(name = "organization_id")
