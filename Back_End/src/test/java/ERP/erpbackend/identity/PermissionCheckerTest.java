@@ -52,4 +52,49 @@ class PermissionCheckerTest {
 		assertThat(checker.has("role.delete")).isFalse();
 	}
 
+	@Test
+	void isSuperAdminReturnsFalseWhenNoAuthenticationIsPresent() {
+		assertThat(checker.isSuperAdmin()).isFalse();
+	}
+
+	@Test
+	void isSuperAdminReturnsFalseForAnOrdinaryMembershipScopedCaller() {
+		authenticate();
+
+		assertThat(checker.isSuperAdmin()).isFalse();
+	}
+
+	@Test
+	void isSuperAdminReturnsTrueForASuperAdminWhosePasswordIsAlreadyChanged() {
+		authenticateAs(AuthenticatedUser.superAdmin(UUID.randomUUID(), "root@platform.test", false));
+
+		assertThat(checker.isSuperAdmin()).isTrue();
+	}
+
+	@Test
+	void isSuperAdminReturnsFalseForASuperAdminWithAPendingForcedPasswordChange() {
+		authenticateAs(AuthenticatedUser.superAdmin(UUID.randomUUID(), "root@platform.test", true));
+
+		assertThat(checker.isSuperAdmin()).isFalse();
+	}
+
+	@Test
+	void isSuperAdminPrincipalReturnsTrueForASuperAdminRegardlessOfAPendingForcedPasswordChange() {
+		authenticateAs(AuthenticatedUser.superAdmin(UUID.randomUUID(), "root@platform.test", true));
+
+		assertThat(checker.isSuperAdminPrincipal()).isTrue();
+	}
+
+	@Test
+	void isSuperAdminPrincipalReturnsFalseForAnOrdinaryMembershipScopedCaller() {
+		authenticate();
+
+		assertThat(checker.isSuperAdminPrincipal()).isFalse();
+	}
+
+	private void authenticateAs(AuthenticatedUser user) {
+		SecurityContextHolder.getContext().setAuthentication(
+				new UsernamePasswordAuthenticationToken(user, null, List.of()));
+	}
+
 }

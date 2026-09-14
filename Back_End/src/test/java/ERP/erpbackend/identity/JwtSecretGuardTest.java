@@ -17,7 +17,7 @@ class JwtSecretGuardTest {
 		if (activeProfiles.length > 0) {
 			environment.setActiveProfiles(activeProfiles);
 		}
-		return new JwtSecretGuard(new JwtProperties(secret, TTL, TTL), environment);
+		return new JwtSecretGuard(new JwtProperties(secret, TTL, TTL, TTL), environment);
 	}
 
 	@Test

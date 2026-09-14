@@ -19,7 +19,7 @@ class JwtServiceTest {
 			UUID.randomUUID());
 
 	private static JwtService serviceWithAccessTtl(Duration accessTokenTtl) {
-		return new JwtService(new JwtProperties(SECRET, accessTokenTtl, Duration.ofDays(30)));
+		return new JwtService(new JwtProperties(SECRET, accessTokenTtl, Duration.ofDays(30), Duration.ofMinutes(30)));
 	}
 
 	@Test
@@ -74,6 +74,24 @@ class JwtServiceTest {
 		JwtService jwtService = serviceWithAccessTtl(Duration.ofMinutes(15));
 
 		assertThat(jwtService.accessTokenTtlSeconds()).isEqualTo(900L);
+	}
+
+	@Test
+	void roundTripsASuperAdminPrincipalWithNoTenantOrganizationSessionOrMembership() {
+		JwtService jwtService = serviceWithAccessTtl(Duration.ofMinutes(15));
+		AuthenticatedUser superAdmin = AuthenticatedUser.superAdmin(UUID.randomUUID(), "root@platform.test", true);
+
+		String token = jwtService.issueAccessToken(superAdmin);
+
+		assertThat(jwtService.parseAccessToken(token)).contains(superAdmin);
+	}
+
+	@Test
+	void superAdminAccessTokenTtlSecondsReflectsConfiguredDuration() {
+		JwtService jwtService = new JwtService(
+				new JwtProperties(SECRET, Duration.ofMinutes(15), Duration.ofDays(30), Duration.ofMinutes(30)));
+
+		assertThat(jwtService.superAdminAccessTokenTtlSeconds()).isEqualTo(1800L);
 	}
 
 }

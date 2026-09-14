@@ -24,6 +24,10 @@ app:
     secret: ${JWT_SECRET:dev-only-insecure-jwt-signing-secret-change-me-in-production-0123456789}
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
     refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:30d}
+    # Super Admin has no refresh token (see current-feature.md's Key decisions), so its access
+    # token gets a longer TTL than the regular one - re-login (with a fresh OTP) is required
+    # once it expires.
+    super-admin-access-token-ttl: ${JWT_SUPER_ADMIN_ACCESS_TOKEN_TTL:30m}
 
 management:
   endpoints:

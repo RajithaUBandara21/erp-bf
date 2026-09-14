@@ -1,10 +1,12 @@
 package ERP.erpbackend.identity;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
@@ -22,22 +24,25 @@ public class JwtService {
 	private static final String CLAIM_EMAIL = "email";
 	private static final String CLAIM_SESSION_ID = "sessionId";
 	private static final String CLAIM_MEMBERSHIP_ID = "membershipId";
+	private static final String CLAIM_PLATFORM_SUPER_ADMIN = "platformSuperAdmin";
+	private static final String CLAIM_MUST_CHANGE_PASSWORD = "mustChangePassword";
 
 	private final JwtProperties jwtProperties;
 
 	public String issueAccessToken(AuthenticatedUser user) {
 		Instant now = Instant.now();
-		return Jwts.builder()
+		JwtBuilder builder = Jwts.builder()
 				.subject(user.userId().toString())
-				.claim(CLAIM_TENANT_ID, user.tenantId().toString())
-				.claim(CLAIM_ORGANIZATION_ID, user.organizationId().toString())
 				.claim(CLAIM_EMAIL, user.email())
-				.claim(CLAIM_SESSION_ID, user.sessionId().toString())
-				.claim(CLAIM_MEMBERSHIP_ID, user.membershipId().toString())
+				.claim(CLAIM_PLATFORM_SUPER_ADMIN, user.platformSuperAdmin())
+				.claim(CLAIM_MUST_CHANGE_PASSWORD, user.mustChangePassword())
 				.issuedAt(Date.from(now))
-				.expiration(Date.from(now.plus(jwtProperties.accessTokenTtl())))
-				.signWith(signingKey())
-				.compact();
+				.expiration(Date.from(now.plus(ttlFor(user))));
+		putIfPresent(builder, CLAIM_TENANT_ID, user.tenantId());
+		putIfPresent(builder, CLAIM_ORGANIZATION_ID, user.organizationId());
+		putIfPresent(builder, CLAIM_SESSION_ID, user.sessionId());
+		putIfPresent(builder, CLAIM_MEMBERSHIP_ID, user.membershipId());
+		return builder.signWith(signingKey()).compact();
 	}
 
 	public Optional<AuthenticatedUser> parseAccessToken(String token) {
@@ -48,18 +53,23 @@ public class JwtService {
 					.parseSignedClaims(token)
 					.getPayload();
 			String membershipId = claims.get(CLAIM_MEMBERSHIP_ID, String.class);
-			if (membershipId == null) {
-				// A token issued before the Membership cutover (feature 5a.2). Reject it so the
-				// caller re-authenticates and picks up a Membership-scoped token.
+			boolean platformSuperAdmin = Boolean.TRUE.equals(claims.get(CLAIM_PLATFORM_SUPER_ADMIN, Boolean.class));
+			if (membershipId == null && !platformSuperAdmin) {
+				// Neither a Membership-scoped token nor a Super Admin one - e.g. a token issued
+				// before the Membership cutover (feature 5a.2). Reject it so the caller
+				// re-authenticates and picks up a token this contract recognizes.
 				return Optional.empty();
 			}
+			boolean mustChangePassword = Boolean.TRUE.equals(claims.get(CLAIM_MUST_CHANGE_PASSWORD, Boolean.class));
 			return Optional.of(new AuthenticatedUser(
 					UUID.fromString(claims.getSubject()),
-					UUID.fromString(claims.get(CLAIM_TENANT_ID, String.class)),
-					UUID.fromString(claims.get(CLAIM_ORGANIZATION_ID, String.class)),
+					uuidOrNull(claims, CLAIM_TENANT_ID),
+					uuidOrNull(claims, CLAIM_ORGANIZATION_ID),
 					claims.get(CLAIM_EMAIL, String.class),
-					UUID.fromString(claims.get(CLAIM_SESSION_ID, String.class)),
-					UUID.fromString(membershipId)));
+					uuidOrNull(claims, CLAIM_SESSION_ID),
+					membershipId == null ? null : UUID.fromString(membershipId),
+					platformSuperAdmin,
+					mustChangePassword));
 		} catch (JwtException | IllegalArgumentException ex) {
 			return Optional.empty();
 		}
@@ -67,6 +77,25 @@ public class JwtService {
 
 	public long accessTokenTtlSeconds() {
 		return jwtProperties.accessTokenTtl().getSeconds();
+	}
+
+	public long superAdminAccessTokenTtlSeconds() {
+		return jwtProperties.superAdminAccessTokenTtl().getSeconds();
+	}
+
+	private Duration ttlFor(AuthenticatedUser user) {
+		return user.platformSuperAdmin() ? jwtProperties.superAdminAccessTokenTtl() : jwtProperties.accessTokenTtl();
+	}
+
+	private static void putIfPresent(JwtBuilder builder, String claimName, UUID value) {
+		if (value != null) {
+			builder.claim(claimName, value.toString());
+		}
+	}
+
+	private static UUID uuidOrNull(Claims claims, String claimName) {
+		String value = claims.get(claimName, String.class);
+		return value == null ? null : UUID.fromString(value);
 	}
 
 	private SecretKey signingKey() {

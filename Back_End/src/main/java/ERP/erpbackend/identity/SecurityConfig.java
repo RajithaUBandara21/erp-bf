@@ -37,7 +37,9 @@ public class SecurityConfig {
 								"/api/auth/refresh", "/api/auth/logout", "/api/auth/join",
 								"/api/auth/verify-email", "/actuator/health",
 								"/api/auth/oauth/google/login-url", "/api/auth/oauth/google/callback",
-								"/api/auth/oauth/google/exchange").permitAll()
+								"/api/auth/oauth/google/exchange",
+								"/api/auth/super-admin/login",
+								"/api/auth/super-admin/login/verify").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(handling -> handling.authenticationEntryPoint(this::sendUnauthorized))
 				.addFilterBefore(new JwtAuthenticationFilter(jwtService, revokedSessionRegistry),
